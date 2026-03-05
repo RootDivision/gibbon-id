@@ -18,7 +18,13 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="flex items-center justify-center py-4">
-        <Image src="/logo.png" alt="Logo" width={120} height={40} className="object-contain" />
+        <Image
+          src="/logo.png"
+          alt="Logo"
+          width={120}
+          height={40}
+          className="object-contain"
+        />
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
