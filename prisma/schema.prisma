@@ -1,0 +1,114 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Log {
+  id                Int      @id @default(autoincrement())
+  behaviour         String   @db.VarChar(255)
+  startDatetime     DateTime
+  endDatetime       DateTime
+  notes             String?  @db.VarChar(255)
+  apeId             Int
+  researchProjectId Int
+  sessionId         Int
+  methodId          Int
+  researcherId      Int
+
+  ape             Ape             @relation(fields: [apeId], references: [id])
+  researchProject ResearchProject @relation(fields: [researchProjectId], references: [id])
+  session         Session         @relation(fields: [sessionId], references: [id])
+  method          Method          @relation(fields: [methodId], references: [id])
+  researcher      Researcher      @relation(fields: [researcherId], references: [id])
+}
+
+model ResearchProject {
+  id          Int       @id @default(autoincrement())
+  title       String    @db.VarChar(255)
+  description String    @db.VarChar(255)
+  startDate   DateTime
+  endDate     DateTime?
+  createdAt   DateTime  @default(now())
+
+  logs      Log[]
+  locations Location[]
+  apeGroups ApeGroup[]
+}
+
+model Researcher {
+  id        Int    @id @default(autoincrement())
+  firstName String @db.VarChar(255)
+  lastName  String @db.VarChar(255)
+  email     String @db.VarChar(255)
+
+  logs Log[]
+}
+
+model Method {
+  id   Int    @id @default(autoincrement())
+  name String @db.VarChar(255)
+
+  logs Log[]
+}
+
+model Ape {
+  id        Int       @id @default(autoincrement())
+  name      String    @db.VarChar(255)
+  speciesId Int?
+  groupId   Int?
+  sex       Sex?
+  ageClass  AgeClass?
+
+  species Species?  @relation(fields: [speciesId], references: [id])
+  group   ApeGroup? @relation(fields: [groupId], references: [id])
+  logs    Log[]
+}
+
+model Session {
+  id   Int    @id @default(autoincrement())
+  name String @db.VarChar(255)
+
+  logs Log[]
+}
+
+model Location {
+  id               Int               @id @default(autoincrement())
+  name             String            @db.VarChar(255)
+  country          String            @db.VarChar(255)
+  type             String            @db.VarChar(255)
+  xCoordinate      Float
+  yCoordinate      Float
+  researchProjects ResearchProject[]
+}
+
+model Species {
+  id   Int    @id @default(autoincrement())
+  name String @db.VarChar(255)
+
+  apes Ape[]
+}
+
+model ApeGroup {
+  id    Int     @id @default(autoincrement())
+  name  String  @db.VarChar(255)
+  notes String? @db.VarChar(500)
+
+  apes             Ape[]
+  researchProjects ResearchProject[]
+}
+
+enum Sex {
+  Male
+  Female
+}
+
+enum AgeClass {
+  Infant
+  Juvenile
+  Subadult
+  Adult
+}
