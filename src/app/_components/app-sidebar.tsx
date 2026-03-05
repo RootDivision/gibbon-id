@@ -1,8 +1,10 @@
 "use client";
 
+import Image from "next/image";
 import {
   Sidebar,
   SidebarContent,
+  SidebarHeader,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -15,6 +17,9 @@ import { actions, adminMenuItems, menuItems } from "../const";
 export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
+      <SidebarHeader className="flex items-center justify-center py-4">
+        <Image src="/logo.png" alt="Logo" width={120} height={40} className="object-contain" />
+      </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel>Navigation</SidebarGroupLabel>
