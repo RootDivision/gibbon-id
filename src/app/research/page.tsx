@@ -78,7 +78,7 @@ export default function ResearchPage() {
       { ...values, startDate: values.startDate.toISOString() },
       {
         onSuccess: () => {
-          refetch();
+          void refetch();
           form.reset();
           setIsOpen(false);
           toast.success("Research project added.");

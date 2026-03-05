@@ -56,7 +56,7 @@ export default function MethodPage() {
       { name: values.name },
       {
         onSuccess: () => {
-          refetch();
+          void refetch();
           form.reset();
           setIsOpen(false);
           toast.success("Method added.");

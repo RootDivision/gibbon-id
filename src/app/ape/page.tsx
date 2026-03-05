@@ -135,10 +135,10 @@ export default function ApePage() {
     const payload = buildPayload(values);
     if (isEditing) {
       updateApe.mutate(
-        { id: (dialogApe as ApeRow).id, ...payload },
+        { id: dialogApe.id, ...payload },
         {
           onSuccess: () => {
-            refetch();
+            void refetch();
             closeDialog();
             toast.success("Ape updated.");
           },
@@ -148,7 +148,7 @@ export default function ApePage() {
     } else {
       addApe.mutate(payload, {
         onSuccess: () => {
-          refetch();
+          void refetch();
           closeDialog();
           toast.success("Ape added.");
         },
@@ -163,7 +163,7 @@ export default function ApePage() {
       { id: deleteApe.id },
       {
         onSuccess: () => {
-          refetch();
+          void refetch();
           setDeleteApe(null);
           toast.success("Ape deleted.");
         },

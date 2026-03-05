@@ -54,7 +54,7 @@ export default function SessionPage() {
   function onSubmit(values: FormValues) {
     addSession.mutate(values, {
       onSuccess: () => {
-        refetch();
+        void refetch();
         form.reset();
         setIsOpen(false);
         toast.success("Session added.");

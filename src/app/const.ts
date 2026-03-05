@@ -1,7 +1,6 @@
 import {
   FileSpreadsheetIcon,
   Home,
-  PlusCircle,
   Sheet,
   TimerIcon,
   Tv2,
