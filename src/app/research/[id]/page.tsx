@@ -45,6 +45,8 @@ export default function ResearchPage() {
     clearSelectedApes,
     methodId,
     selectMethod,
+    researcherId,
+    selectResearcher,
     sessionName,
     setSessionName,
   } = useAppStore();
@@ -409,6 +411,28 @@ export default function ResearchPage() {
               </Select>
             </div>
 
+            <div className="flex flex-col gap-4">
+              <Label htmlFor="researcher-session-select">Researcher</Label>
+              <Select
+                value={researcherId ? String(researcherId) : ""}
+                onValueChange={(val) => selectResearcher(Number(val))}
+              >
+                <SelectTrigger
+                  id="researcher-session-select"
+                  className="w-full"
+                >
+                  <SelectValue placeholder="Select a researcher…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {projectResearchers.map((r) => (
+                    <SelectItem key={r.id} value={String(r.id)}>
+                      {r.firstName} {r.lastName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="flex justify-end gap-2 pt-2">
               <Button
                 variant="outline"
@@ -422,7 +446,9 @@ export default function ResearchPage() {
               </Button>
               <Button
                 asChild
-                disabled={selectedApeIds.length === 0 || !methodId}
+                disabled={
+                  selectedApeIds.length === 0 || !methodId || !researcherId
+                }
                 onClick={() => setSessionModalOpen(false)}
               >
                 <Link href={`/research/${researchId}/session/log`}>

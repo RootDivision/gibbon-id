@@ -42,6 +42,8 @@ export default function LogPage() {
 
   const { id: researchId } = useParams<{ id: string }>();
 
+  const { data: researchers } = api.researcher.getResearchers.useQuery();
+
   const [elapsed, setElapsed] = useState(0);
   const [running, setRunning] = useState(false);
   const [behaviour, setBehaviour] = useState("");
@@ -146,6 +148,17 @@ export default function LogPage() {
       <h1>
         {sessionName} - {methods?.find((m) => m.id === methodId)?.name}
       </h1>
+      {researcherId && (
+        <p className="text-muted-foreground text-sm">
+          Researcher:{" "}
+          <span className="text-foreground font-medium">
+            {(() => {
+              const r = researchers?.find((r) => r.id === researcherId);
+              return r ? `${r.firstName} ${r.lastName}` : `#${researcherId}`;
+            })()}
+          </span>
+        </p>
+      )}
       <div className="font-mono text-6xl font-bold tracking-widest">
         {formatTime(elapsed)}
       </div>

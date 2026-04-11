@@ -6,16 +6,18 @@ interface AppState {
   sessionName: string;
   selectedApeIds: number[];
   selectMethod: (methodId: number) => void;
+  selectResearcher: (researcherId: number) => void;
   setSessionName: (name: string) => void;
   selectApe: (apeId: number) => void;
   clearSelectedApes: () => void;
 }
 export const useAppStore = create<AppState>((set) => ({
-  researcherId: 1 /* Default to first researcher for simplicity */,
+  researcherId: null,
   methodId: 1 /* Default to first method for simplicity */,
   sessionName: "",
   selectedApeIds: [],
   selectMethod: (methodId: number) => set({ methodId }),
+  selectResearcher: (researcherId: number) => set({ researcherId }),
   setSessionName: (name: string) => set({ sessionName: name }),
   selectApe: (apeId: number) =>
     set((state) => ({
@@ -23,5 +25,5 @@ export const useAppStore = create<AppState>((set) => ({
         ? state.selectedApeIds.filter((id) => id !== apeId)
         : [...state.selectedApeIds, apeId],
     })),
-  clearSelectedApes: () => set({ selectedApeIds: [] }),
+  clearSelectedApes: () => set({ selectedApeIds: [], researcherId: null }),
 }));
