@@ -17,7 +17,7 @@ async function main() {
     locationThailand,
     locationSabah,
     locationJava,
-    locationPhilippines,
+    locationVietnam,
   ] = await Promise.all([
     prisma.location.upsert({
       where: { id: 1 },
@@ -78,11 +78,11 @@ async function main() {
       where: { id: 6 },
       update: {},
       create: {
-        name: "Mount Kitanglad Range",
-        country: "Philippines",
-        type: "Natural Park",
-        xCoordinate: 124.87,
-        yCoordinate: 8.17,
+        name: "Cat Tien National Park",
+        country: "Vietnam",
+        type: "National Park",
+        xCoordinate: 107.43,
+        yCoordinate: 11.42,
       },
     }),
   ]);
@@ -185,7 +185,7 @@ async function main() {
     agileGibbon,
     mullerGibbon,
     javaGibbon,
-    philippineGibbon,
+    redCheekedGibbon,
   ] = await Promise.all([
     prisma.species.upsert({
       where: { id: 1 },
@@ -215,7 +215,7 @@ async function main() {
     prisma.species.upsert({
       where: { id: 6 },
       update: {},
-      create: { name: "Philippine Gibbon (Hylobates lar carpenteri)" },
+      create: { name: "Red-cheeked Gibbon (Nomascus gabriellae)" },
     }),
   ]);
   console.log("  ✔ Species");
@@ -229,7 +229,7 @@ async function main() {
     groupKhaoYai,
     groupKinabalu,
     groupUjung,
-    groupKitanglad,
+    groupCatTien,
   ] = await Promise.all([
     prisma.apeGroup.upsert({
       where: { id: 1 },
@@ -279,9 +279,9 @@ async function main() {
       where: { id: 6 },
       update: {},
       create: {
-        name: "Kitanglad Philippine Pair",
+        name: "Cat Tien Red-cheeked Pair",
         notes:
-          "Newly documented adult pair at high-elevation site in Mount Kitanglad.",
+          "Newly documented adult pair of red-cheeked gibbons at Cat Tien National Park, Vietnam.",
       },
     }),
   ]);
@@ -429,22 +429,22 @@ async function main() {
     }),
     prisma.ape.upsert({
       where: { id: 12 },
-      update: { groupId: groupKitanglad.id },
+      update: { groupId: groupCatTien.id },
       create: {
         name: "Pike",
-        speciesId: philippineGibbon.id,
-        groupId: groupKitanglad.id,
+        speciesId: redCheekedGibbon.id,
+        groupId: groupCatTien.id,
         sex: Sex.Male,
         ageClass: AgeClass.Adult,
       },
     }),
     prisma.ape.upsert({
       where: { id: 13 },
-      update: { groupId: groupKitanglad.id },
+      update: { groupId: groupCatTien.id },
       create: {
         name: "Ori",
-        speciesId: philippineGibbon.id,
-        groupId: groupKitanglad.id,
+        speciesId: redCheekedGibbon.id,
+        groupId: groupCatTien.id,
         sex: Sex.Female,
         ageClass: AgeClass.Adult,
       },
@@ -524,20 +524,20 @@ async function main() {
         where: { id: 4 },
         update: {
           apeGroups: {
-            set: [{ id: groupUjung.id }, { id: groupKitanglad.id }],
+            set: [{ id: groupUjung.id }, { id: groupCatTien.id }],
           },
         },
         create: {
-          title: "Island Gibbon Conservation Survey 2026",
+          title: "Southern Gibbon Conservation Survey 2026",
           description:
-            "Cross-site conservation survey of critically endangered island gibbon populations in Java and the Philippines.",
+            "Cross-site conservation survey of critically endangered gibbon populations in Java and southern Vietnam.",
           startDate: new Date("2026-04-01"),
           endDate: new Date("2026-10-31"),
           locations: {
-            connect: [{ id: locationJava.id }, { id: locationPhilippines.id }],
+            connect: [{ id: locationJava.id }, { id: locationVietnam.id }],
           },
           apeGroups: {
-            connect: [{ id: groupUjung.id }, { id: groupKitanglad.id }],
+            connect: [{ id: groupUjung.id }, { id: groupCatTien.id }],
           },
         },
       }),

@@ -19,10 +19,29 @@ export const apeRouter = createTRPCRouter({
       z.object({
         sortField: z.enum(["id", "name", "sex", "ageClass"]).default("name"),
         sortDir: z.enum(["asc", "desc"]).default("asc"),
+        search: z.string().optional(),
+        speciesId: z.number().nullable().optional(),
+        groupId: z.number().nullable().optional(),
+        sex: z.enum(["Male", "Female"]).nullable().optional(),
+        ageClass: z
+          .enum(["Infant", "Juvenile", "Subadult", "Adult"])
+          .nullable()
+          .optional(),
       }),
     )
     .query(async ({ ctx, input }) => {
+      const where = {
+        ...(input.search
+          ? { name: { contains: input.search, mode: "insensitive" as const } }
+          : {}),
+        ...(input.speciesId != null ? { speciesId: input.speciesId } : {}),
+        ...(input.groupId != null ? { groupId: input.groupId } : {}),
+        ...(input.sex != null ? { sex: input.sex } : {}),
+        ...(input.ageClass != null ? { ageClass: input.ageClass } : {}),
+      };
+
       const apeResponse = ctx.db.ape.findMany({
+        where,
         orderBy: { [input.sortField]: input.sortDir },
         include: { species: true, group: true },
       });

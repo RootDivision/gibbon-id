@@ -7,6 +7,8 @@ import {
   ArrowUpDown,
   Pencil,
   PlusCircle,
+  Search,
+  SlidersHorizontal,
   Trash2,
 } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -30,6 +32,7 @@ import {
   FormMessage,
 } from "~/components/ui/form";
 import { Input } from "~/components/ui/input";
+import { Label } from "~/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -60,6 +63,22 @@ const formSchema = z.object({
 });
 
 type FormValues = z.infer<typeof formSchema>;
+
+type ApeFilters = {
+  search: string;
+  speciesId: string;
+  groupId: string;
+  sex: string;
+  ageClass: string;
+};
+
+const EMPTY_FILTERS: ApeFilters = {
+  search: "",
+  speciesId: "",
+  groupId: "",
+  sex: "",
+  ageClass: "",
+};
 
 type ApeRow = RouterOutputs["ape"]["getApes"][number];
 
@@ -107,6 +126,8 @@ function apeToFormValues(ape: ApeRow): FormValues {
 export default function ApePage() {
   const [dialogApe, setDialogApe] = useState<ApeRow | null | "add">(null);
   const [deleteApe, setDeleteApe] = useState<ApeRow | null>(null);
+  const [showFilters, setShowFilters] = useState(true);
+  const [filters, setFilters] = useState<ApeFilters>(EMPTY_FILTERS);
   const [sort, setSort] = useState<{
     field: AllSortField;
     dir: "asc" | "desc";
@@ -114,6 +135,14 @@ export default function ApePage() {
     field: "name",
     dir: "asc",
   });
+
+  function setFilter<K extends keyof ApeFilters>(key: K, value: ApeFilters[K]) {
+    setFilters((prev) => ({ ...prev, [key]: value }));
+  }
+
+  function clearFilters() {
+    setFilters(EMPTY_FILTERS);
+  }
 
   function handleSort(field: AllSortField) {
     setSort((prev) =>
@@ -126,6 +155,16 @@ export default function ApePage() {
   const { data: apes, refetch } = api.ape.getApes.useQuery({
     sortField: isBackendField(sort.field) ? sort.field : "name",
     sortDir: isBackendField(sort.field) ? sort.dir : "asc",
+    search: filters.search || undefined,
+    speciesId: filters.speciesId ? Number(filters.speciesId) : undefined,
+    groupId: filters.groupId ? Number(filters.groupId) : undefined,
+    sex: (filters.sex || undefined) as "Male" | "Female" | undefined,
+    ageClass: (filters.ageClass || undefined) as
+      | "Infant"
+      | "Juvenile"
+      | "Subadult"
+      | "Adult"
+      | undefined,
   });
 
   const displayApes = useMemo(() => {
@@ -246,11 +285,137 @@ export default function ApePage() {
     <>
       <div className="flex items-center justify-between gap-4">
         <h1>Apes</h1>
-        <Button onClick={openAdd}>
-          <PlusCircle />
-          Add ape
-        </Button>
+        <div className="flex items-center gap-2">
+          <div className="relative w-56">
+            <Search className="text-muted-foreground absolute top-2.5 left-2.5 size-4" />
+            <Input
+              placeholder="Search by name…"
+              value={filters.search}
+              onChange={(e) => setFilter("search", e.target.value)}
+              className="pl-8"
+            />
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowFilters((v) => !v)}
+          >
+            <SlidersHorizontal className="mr-2 size-4" />
+            {showFilters ? "Hide filters" : "Show filters"}
+          </Button>
+          <Button onClick={openAdd}>
+            <PlusCircle />
+            Add ape
+          </Button>
+        </div>
       </div>
+
+      {showFilters && (
+        <div className="rounded-lg border p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <span className="text-sm font-medium">Filters</span>
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="text-muted-foreground hover:text-foreground text-xs underline"
+            >
+              Clear all
+            </button>
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="space-y-1">
+              <Label htmlFor="filter-species" className="text-xs">
+                Species
+              </Label>
+              <Select
+                value={filters.speciesId || "all"}
+                onValueChange={(v) =>
+                  setFilter("speciesId", v === "all" ? "" : v)
+                }
+              >
+                <SelectTrigger id="filter-species" className="w-full">
+                  <SelectValue placeholder="All species" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All species</SelectItem>
+                  {species?.map((s) => (
+                    <SelectItem key={s.id} value={String(s.id)}>
+                      {s.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="filter-group" className="text-xs">
+                Group
+              </Label>
+              <Select
+                value={filters.groupId || "all"}
+                onValueChange={(v) =>
+                  setFilter("groupId", v === "all" ? "" : v)
+                }
+              >
+                <SelectTrigger id="filter-group" className="w-full">
+                  <SelectValue placeholder="All groups" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All groups</SelectItem>
+                  {groups?.map((g) => (
+                    <SelectItem key={g.id} value={String(g.id)}>
+                      {g.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="filter-sex" className="text-xs">
+                Sex
+              </Label>
+              <Select
+                value={filters.sex || "all"}
+                onValueChange={(v) => setFilter("sex", v === "all" ? "" : v)}
+              >
+                <SelectTrigger id="filter-sex" className="w-full">
+                  <SelectValue placeholder="All" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  {SEX_OPTIONS.map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {s}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="filter-age-class" className="text-xs">
+                Age Class
+              </Label>
+              <Select
+                value={filters.ageClass || "all"}
+                onValueChange={(v) =>
+                  setFilter("ageClass", v === "all" ? "" : v)
+                }
+              >
+                <SelectTrigger id="filter-age-class" className="w-full">
+                  <SelectValue placeholder="All" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  {AGE_CLASS_OPTIONS.map((a) => (
+                    <SelectItem key={a} value={a}>
+                      {a}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Add / Edit dialog */}
       <Dialog
@@ -442,13 +607,6 @@ export default function ApePage() {
             <TableRow>
               <TableHead
                 className="cursor-pointer select-none"
-                onClick={() => handleSort("id")}
-              >
-                ID
-                <SortIcon field="id" sort={sort} />
-              </TableHead>
-              <TableHead
-                className="cursor-pointer select-none"
                 onClick={() => handleSort("name")}
               >
                 Name
@@ -488,7 +646,6 @@ export default function ApePage() {
           <TableBody>
             {displayApes.map((ape) => (
               <TableRow key={ape.id}>
-                <TableCell>{ape.id}</TableCell>
                 <TableCell>
                   <Link
                     href={`/ape/${ape.id}`}

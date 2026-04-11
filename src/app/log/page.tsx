@@ -39,7 +39,6 @@ import {
 import { api } from "~/trpc/react";
 
 type ColumnKey =
-  | "id"
   | "ape"
   | "species"
   | "behaviour"
@@ -54,7 +53,6 @@ type ColumnKey =
   | "researchProject";
 
 const ALL_COLUMNS: { key: ColumnKey; label: string }[] = [
-  { key: "id", label: "ID" },
   { key: "ape", label: "Ape" },
   { key: "species", label: "Species" },
   { key: "behaviour", label: "Behaviour" },
@@ -70,7 +68,6 @@ const ALL_COLUMNS: { key: ColumnKey; label: string }[] = [
 ];
 
 type SortKey =
-  | "id"
   | "behaviour"
   | "startDatetime"
   | "endDatetime"
@@ -113,7 +110,7 @@ export default function LogPage() {
   }
 
   const show = (key: ColumnKey) => visibleColumns.has(key);
-  const [sortKey, setSortKey] = useState<SortKey>("id");
+  const [sortKey, setSortKey] = useState<SortKey>("startDatetime");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
 
   function handleSort(key: SortKey) {
@@ -139,10 +136,16 @@ export default function LogPage() {
 
   const { data: logs } = api.log.getLogs.useQuery();
   const { data: methods } = api.method.getMethods.useQuery();
-  const { data: projects } = api.research.getResearches.useQuery();
+  const { data: projects } = api.research.getResearches.useQuery({
+    sortField: "title",
+    sortDir: "asc",
+  });
   const { data: sessions } = api.session.getSessions.useQuery();
   const { data: researchers } = api.researcher.getResearchers.useQuery();
-  const { data: apes } = api.ape.getApes.useQuery();
+  const { data: apes } = api.ape.getApes.useQuery({
+    sortField: "name",
+    sortDir: "asc",
+  });
 
   function setFilter<K extends keyof Filters>(key: K, value: Filters[K]) {
     setFilters((prev) => ({ ...prev, [key]: value }));
@@ -216,9 +219,6 @@ export default function LogPage() {
   const sortedLogs = [...filteredLogs].sort((a, b) => {
     let cmp = 0;
     switch (sortKey) {
-      case "id":
-        cmp = a.id - b.id;
-        break;
       case "behaviour":
         cmp = a.behaviour.localeCompare(b.behaviour);
         break;
@@ -566,7 +566,6 @@ export default function LogPage() {
             <TableRow>
               {(
                 [
-                  ["id", "ID"],
                   ["ape", "Ape"],
                   ["species", "Species"],
                   ["behaviour", "Behaviour"],
@@ -610,7 +609,6 @@ export default function LogPage() {
           <TableBody>
             {sortedLogs.map((log) => (
               <TableRow key={log.id}>
-                {show("id") && <TableCell>{log.id}</TableCell>}
                 {show("ape") && <TableCell>{log.ape?.name ?? ""}</TableCell>}
                 {show("species") && (
                   <TableCell>{log.ape?.species?.name ?? ""}</TableCell>

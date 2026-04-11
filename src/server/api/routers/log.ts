@@ -57,17 +57,50 @@ export const logRouter = createTRPCRouter({
     }),
 
   getLogsByApeId: publicProcedure
-    .input(z.object({ apeId: z.number() }))
+    .input(
+      z.object({
+        apeId: z.number(),
+        sortField: z
+          .enum(["id", "startDatetime", "endDatetime", "behaviour"])
+          .default("startDatetime"),
+        sortDir: z.enum(["asc", "desc"]).default("desc"),
+        behaviour: z.string().optional(),
+        researchProjectId: z.number().optional(),
+        sessionId: z.number().optional(),
+        methodId: z.number().optional(),
+        researcherId: z.number().optional(),
+      }),
+    )
     .query(async ({ ctx, input }) => {
+      const where = {
+        apeId: input.apeId,
+        ...(input.behaviour
+          ? {
+              behaviour: {
+                contains: input.behaviour,
+                mode: "insensitive" as const,
+              },
+            }
+          : {}),
+        ...(input.researchProjectId != null
+          ? { researchProjectId: input.researchProjectId }
+          : {}),
+        ...(input.sessionId != null ? { sessionId: input.sessionId } : {}),
+        ...(input.methodId != null ? { methodId: input.methodId } : {}),
+        ...(input.researcherId != null
+          ? { researcherId: input.researcherId }
+          : {}),
+      };
+
       return ctx.db.log.findMany({
-        where: { apeId: input.apeId },
+        where,
         include: {
           researchProject: true,
           session: true,
           method: true,
           researcher: true,
         },
-        orderBy: { startDatetime: "desc" },
+        orderBy: { [input.sortField]: input.sortDir },
       });
     }),
 });

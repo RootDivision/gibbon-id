@@ -307,13 +307,6 @@ export default function ResearchPage() {
           <TableRow>
             <TableHead
               className="cursor-pointer select-none"
-              onClick={() => handleSort("id")}
-            >
-              ID
-              <SortIcon field="id" sort={sort} />
-            </TableHead>
-            <TableHead
-              className="cursor-pointer select-none"
               onClick={() => handleSort("title")}
             >
               Title
@@ -367,7 +360,6 @@ export default function ResearchPage() {
         <TableBody>
           {displayData.map((research) => (
             <TableRow key={research.id}>
-              <TableCell>{research.id}</TableCell>
               <TableCell>
                 <Link href={`/research/${research.id}`}>{research.title}</Link>
               </TableCell>

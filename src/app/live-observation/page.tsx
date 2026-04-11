@@ -62,7 +62,10 @@ export default function LiveObservation() {
   const router = useRouter();
 
   const addResearch = api.research.addResearch.useMutation();
-  const { data: projects } = api.research.getResearches.useQuery();
+  const { data: projects } = api.research.getResearches.useQuery({
+    sortField: "title",
+    sortDir: "asc",
+  });
 
   const newForm = useForm<NewFormValues>({
     resolver: zodResolver(newFormSchema),
