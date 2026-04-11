@@ -21,7 +21,7 @@ export const logRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       return ctx.db.log.findMany({
         where: { sessionId: input.sessionId },
-        include: { ape: true, method: true },
+        include: { ape: true, method: true, researcher: true },
         orderBy: { id: "asc" },
       });
     }),

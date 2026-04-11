@@ -66,4 +66,25 @@ export const apeGroupRouter = createTRPCRouter({
         },
       });
     }),
+
+  addApeGroupToProject: publicProcedure
+    .input(
+      z.object({
+        name: z.string().min(1),
+        notes: z.string().optional(),
+        apeIds: z.array(z.number()),
+        researchProjectId: z.number(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      return ctx.db.apeGroup.create({
+        data: {
+          name: input.name,
+          notes: input.notes,
+          apes: { connect: input.apeIds.map((id) => ({ id })) },
+          researchProjects: { connect: { id: input.researchProjectId } },
+        },
+        include: { apes: { include: { species: true } } },
+      });
+    }),
 });

@@ -43,14 +43,6 @@ export default function SessionPage() {
         {session?.name ?? `Session #${sessionId}`}
       </h1>
 
-      {/* <div className="mb-6">
-        <Button asChild>
-          <Link href={`/research/${researchId}/session/log`}>
-            Start New Session
-          </Link>
-        </Button>
-      </div> */}
-
       <Table>
         {logs.length === 0 && (
           <TableCaption>No logs found for this session.</TableCaption>
@@ -63,7 +55,7 @@ export default function SessionPage() {
             <TableHead>End</TableHead>
             <TableHead>Ape</TableHead>
             <TableHead>Method</TableHead>
-            <TableHead>Location</TableHead>
+            <TableHead>Researcher</TableHead>
             <TableHead>Notes</TableHead>
           </TableRow>
         </TableHeader>
@@ -84,6 +76,11 @@ export default function SessionPage() {
               </TableCell>
               <TableCell>{log.ape?.name ?? "—"}</TableCell>
               <TableCell>{log.method?.name ?? "—"}</TableCell>
+              <TableCell>
+                {log.researcher
+                  ? `${log.researcher.firstName} ${log.researcher.lastName}`
+                  : "—"}
+              </TableCell>
               <TableCell>{log.notes ?? "—"}</TableCell>
             </TableRow>
           ))}

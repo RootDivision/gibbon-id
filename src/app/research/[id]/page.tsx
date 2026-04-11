@@ -3,7 +3,9 @@
 import { notFound, useParams } from "next/navigation";
 import Link from "next/link";
 import { useState } from "react";
+import { Plus } from "lucide-react";
 import { Button } from "~/components/ui/button";
+import { Checkbox } from "~/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Avatar, AvatarFallback } from "~/components/ui/avatar";
 import {
@@ -58,9 +60,55 @@ export default function ResearchPage() {
       researchId: Number(researchId),
     });
 
-  const { data: project } = api.research.getResearchById.useQuery({
-    researchId: Number(researchId),
+  const { data: project, refetch: refetchProject } =
+    api.research.getResearchById.useQuery({
+      researchId: Number(researchId),
+    });
+
+  const { data: allApes = [] } = api.ape.getApes.useQuery({
+    sortField: "name",
+    sortDir: "asc",
   });
+
+  const addApeGroupToProject = api.apeGroup.addApeGroupToProject.useMutation();
+
+  const [addGroupOpen, setAddGroupOpen] = useState(false);
+  const [groupName, setGroupName] = useState("");
+  const [groupNotes, setGroupNotes] = useState("");
+  const [selectedGroupApeIds, setSelectedGroupApeIds] = useState<number[]>([]);
+
+  function toggleGroupApe(apeId: number) {
+    setSelectedGroupApeIds((prev) =>
+      prev.includes(apeId)
+        ? prev.filter((id) => id !== apeId)
+        : [...prev, apeId],
+    );
+  }
+
+  function openAddGroup() {
+    setGroupName("");
+    setGroupNotes("");
+    setSelectedGroupApeIds([]);
+    setAddGroupOpen(true);
+  }
+
+  function saveApeGroup() {
+    if (!groupName.trim()) return;
+    addApeGroupToProject.mutate(
+      {
+        name: groupName.trim(),
+        notes: groupNotes.trim() || undefined,
+        apeIds: selectedGroupApeIds,
+        researchProjectId: Number(researchId),
+      },
+      {
+        onSuccess: () => {
+          void refetchProject();
+          setAddGroupOpen(false);
+        },
+      },
+    );
+  }
 
   const sessions = Array.from(
     new Map(
@@ -122,9 +170,16 @@ export default function ResearchPage() {
           </div>
         </>
       )}
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-bold">Ape Groups</h2>
+        <Button size="sm" onClick={openAddGroup}>
+          <Plus className="mr-1 size-4" />
+          Add Ape Group
+        </Button>
+      </div>
+
       {(project?.apeGroups ?? []).length > 0 && (
         <>
-          <h2 className="text-lg font-bold">Ape Groups</h2>
           <div className="grid grid-cols-2 gap-4">
             {project?.apeGroups.map((group) => (
               <Card key={group.id}>
@@ -350,6 +405,100 @@ export default function ResearchPage() {
                 <Link href={`/research/${researchId}/session/log`}>
                   Continue
                 </Link>
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Ape Group dialog */}
+      <Dialog
+        open={addGroupOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setGroupName("");
+            setGroupNotes("");
+            setSelectedGroupApeIds([]);
+          }
+          setAddGroupOpen(open);
+        }}
+      >
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Add Ape Group</DialogTitle>
+            <DialogDescription>
+              Create a new ape group and link it to this research project.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="group-name">Group name</Label>
+              <Input
+                id="group-name"
+                placeholder="e.g. Danum Alpha Group"
+                value={groupName}
+                onChange={(e) => setGroupName(e.target.value)}
+              />
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="group-notes">Notes (optional)</Label>
+              <Input
+                id="group-notes"
+                placeholder="Any notes about this group…"
+                value={groupNotes}
+                onChange={(e) => setGroupNotes(e.target.value)}
+              />
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <Label className="text-sm font-medium">Add apes</Label>
+              {allApes.length === 0 ? (
+                <p className="text-muted-foreground text-sm">
+                  No apes available.
+                </p>
+              ) : (
+                <div className="grid max-h-64 grid-cols-2 gap-2 overflow-y-auto rounded-md border p-3">
+                  {allApes.map((ape) => (
+                    <div key={ape.id} className="flex items-center gap-2">
+                      <Checkbox
+                        id={`group-ape-${ape.id}`}
+                        checked={selectedGroupApeIds.includes(ape.id)}
+                        onCheckedChange={() => toggleGroupApe(ape.id)}
+                      />
+                      <label
+                        htmlFor={`group-ape-${ape.id}`}
+                        className="cursor-pointer text-sm"
+                      >
+                        {ape.name}
+                        {ape.species && (
+                          <span className="text-muted-foreground ml-1 text-xs">
+                            ({ape.species.name})
+                          </span>
+                        )}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {selectedGroupApeIds.length > 0 && (
+                <p className="text-muted-foreground text-xs">
+                  {selectedGroupApeIds.length} ape
+                  {selectedGroupApeIds.length !== 1 ? "s" : ""} selected
+                </p>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setAddGroupOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                disabled={!groupName.trim() || addApeGroupToProject.isPending}
+                onClick={saveApeGroup}
+              >
+                {addApeGroupToProject.isPending ? "Saving…" : "Save"}
               </Button>
             </div>
           </div>

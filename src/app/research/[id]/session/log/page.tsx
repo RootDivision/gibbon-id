@@ -54,7 +54,10 @@ export default function LogPage() {
   const startedAtRef = useRef<Date | null>(null);
 
   const { selectedApeIds } = useAppStore();
-  const { data: apes } = api.ape.getApes.useQuery();
+  const { data: apes } = api.ape.getApes.useQuery({
+    sortField: "name",
+    sortDir: "asc",
+  });
   const selectedApes = (apes ?? []).filter((a) =>
     selectedApeIds.includes(a.id),
   );
