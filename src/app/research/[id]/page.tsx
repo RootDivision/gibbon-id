@@ -167,7 +167,11 @@ export default function ResearchPage() {
 
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-bold">Researchers</h2>
-        <Button size="sm" onClick={() => setAddResearcherOpen(true)}>
+        <Button
+          size="sm"
+          className="w-36"
+          onClick={() => setAddResearcherOpen(true)}
+        >
           <Plus className="mr-1 size-4" />
           Add Researcher
         </Button>
@@ -197,7 +201,7 @@ export default function ResearchPage() {
       )}
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-bold">Ape Groups</h2>
-        <Button size="sm" onClick={openAddGroup}>
+        <Button size="sm" className="w-36" onClick={openAddGroup}>
           <Plus className="mr-1 size-4" />
           Add Ape Group
         </Button>
@@ -329,13 +333,37 @@ export default function ResearchPage() {
           </DialogHeader>
 
           <div className="flex flex-col gap-4">
-            <Label htmlFor="session-name">Session name</Label>
-            <Input
-              id="session-name"
-              placeholder="e.g. Morning observation"
-              value={sessionName}
-              onChange={(e) => setSessionName(e.target.value)}
-            />
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="researcher-session-select">Researcher</Label>
+              <Select
+                value={researcherId ? String(researcherId) : ""}
+                onValueChange={(val) => selectResearcher(Number(val))}
+              >
+                <SelectTrigger
+                  id="researcher-session-select"
+                  className="w-full"
+                >
+                  <SelectValue placeholder="Select a researcher…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {projectResearchers.map((r) => (
+                    <SelectItem key={r.id} value={String(r.id)}>
+                      {r.firstName} {r.lastName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="session-name">Session name</Label>
+              <Input
+                id="session-name"
+                placeholder="e.g. Morning observation"
+                value={sessionName}
+                onChange={(e) => setSessionName(e.target.value)}
+              />
+            </div>
           </div>
 
           <div className="flex flex-col gap-4 py-2">
@@ -405,28 +433,6 @@ export default function ResearchPage() {
                   {methods.map((m) => (
                     <SelectItem key={m.id} value={String(m.id)}>
                       {m.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex flex-col gap-4">
-              <Label htmlFor="researcher-session-select">Researcher</Label>
-              <Select
-                value={researcherId ? String(researcherId) : ""}
-                onValueChange={(val) => selectResearcher(Number(val))}
-              >
-                <SelectTrigger
-                  id="researcher-session-select"
-                  className="w-full"
-                >
-                  <SelectValue placeholder="Select a researcher…" />
-                </SelectTrigger>
-                <SelectContent>
-                  {projectResearchers.map((r) => (
-                    <SelectItem key={r.id} value={String(r.id)}>
-                      {r.firstName} {r.lastName}
                     </SelectItem>
                   ))}
                 </SelectContent>
