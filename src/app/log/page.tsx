@@ -339,8 +339,11 @@ export default function LogPage() {
           </div>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
             <div className="space-y-1">
-              <Label className="text-xs">Behaviour</Label>
+              <Label htmlFor="filter-behaviour" className="text-xs">
+                Behaviour
+              </Label>
               <Input
+                id="filter-behaviour"
                 placeholder="Search behaviour…"
                 value={filters.behaviour}
                 onChange={(e) => setFilter("behaviour", e.target.value)}
@@ -348,14 +351,20 @@ export default function LogPage() {
             </div>
 
             <div className="space-y-1">
-              <Label className="text-xs">Research Project</Label>
+              <Label htmlFor="filter-research-project" className="text-xs">
+                Research Project
+              </Label>
               <Select
                 value={filters.researchProjectId || "all"}
                 onValueChange={(v) =>
                   setFilter("researchProjectId", v === "all" ? "" : v)
                 }
               >
-                <SelectTrigger className="w-full">
+                <SelectTrigger
+                  id="filter-research-project"
+                  className="w-full"
+                  aria-label="Research Project"
+                >
                   <SelectValue placeholder="All projects" />
                 </SelectTrigger>
                 <SelectContent>
@@ -370,14 +379,20 @@ export default function LogPage() {
             </div>
 
             <div className="space-y-1">
-              <Label className="text-xs">Session</Label>
+              <Label htmlFor="filter-session" className="text-xs">
+                Session
+              </Label>
               <Select
                 value={filters.sessionId || "all"}
                 onValueChange={(v) =>
                   setFilter("sessionId", v === "all" ? "" : v)
                 }
               >
-                <SelectTrigger className="w-full">
+                <SelectTrigger
+                  id="filter-session"
+                  className="w-full"
+                  aria-label="Session"
+                >
                   <SelectValue placeholder="All sessions" />
                 </SelectTrigger>
                 <SelectContent>
@@ -392,14 +407,20 @@ export default function LogPage() {
             </div>
 
             <div className="space-y-1">
-              <Label className="text-xs">Researcher</Label>
+              <Label htmlFor="filter-researcher" className="text-xs">
+                Researcher
+              </Label>
               <Select
                 value={filters.researcherId || "all"}
                 onValueChange={(v) =>
                   setFilter("researcherId", v === "all" ? "" : v)
                 }
               >
-                <SelectTrigger className="w-full">
+                <SelectTrigger
+                  id="filter-researcher"
+                  className="w-full"
+                  aria-label="Researcher"
+                >
                   <SelectValue placeholder="All researchers" />
                 </SelectTrigger>
                 <SelectContent>
@@ -414,14 +435,20 @@ export default function LogPage() {
             </div>
 
             <div className="space-y-1">
-              <Label className="text-xs">Method</Label>
+              <Label htmlFor="filter-method" className="text-xs">
+                Method
+              </Label>
               <Select
                 value={filters.methodId || "all"}
                 onValueChange={(v) =>
                   setFilter("methodId", v === "all" ? "" : v)
                 }
               >
-                <SelectTrigger className="w-full">
+                <SelectTrigger
+                  id="filter-method"
+                  className="w-full"
+                  aria-label="Method"
+                >
                   <SelectValue placeholder="All methods" />
                 </SelectTrigger>
                 <SelectContent>
@@ -436,12 +463,18 @@ export default function LogPage() {
             </div>
 
             <div className="space-y-1">
-              <Label className="text-xs">Ape</Label>
+              <Label htmlFor="filter-ape" className="text-xs">
+                Ape
+              </Label>
               <Select
                 value={filters.apeId || "all"}
                 onValueChange={(v) => setFilter("apeId", v === "all" ? "" : v)}
               >
-                <SelectTrigger className="w-full">
+                <SelectTrigger
+                  id="filter-ape"
+                  className="w-full"
+                  aria-label="Ape"
+                >
                   <SelectValue placeholder="All apes" />
                 </SelectTrigger>
                 <SelectContent>
@@ -457,12 +490,16 @@ export default function LogPage() {
             </div>
 
             <div className="space-y-1">
-              <Label className="text-xs">Date from</Label>
+              <Label htmlFor="filter-date-from" className="text-xs">
+                Date from
+              </Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
+                    id="filter-date-from"
                     variant="outline"
                     data-empty={!filters.dateFrom}
+                    aria-label="Date from"
                     className="data-[empty=true]:text-muted-foreground w-full justify-start text-left font-normal"
                   >
                     <CalendarIcon />
@@ -485,12 +522,16 @@ export default function LogPage() {
             </div>
 
             <div className="space-y-1">
-              <Label className="text-xs">Date to</Label>
+              <Label htmlFor="filter-date-to" className="text-xs">
+                Date to
+              </Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
+                    id="filter-date-to"
                     variant="outline"
                     data-empty={!filters.dateTo}
+                    aria-label="Date to"
                     className="data-[empty=true]:text-muted-foreground w-full justify-start text-left font-normal"
                   >
                     <CalendarIcon />

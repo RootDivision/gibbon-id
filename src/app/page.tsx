@@ -19,7 +19,7 @@ import { api, HydrateClient } from "~/trpc/server";
 export default async function Home() {
   const [stats, researchProjects] = await Promise.all([
     api.research.getDashboardStats(),
-    api.research.getResearches(),
+    api.research.getResearches({ sortField: "createdAt", sortDir: "desc" }),
   ]);
 
   const metrics = [

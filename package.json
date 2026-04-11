@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "vercel-build": "prisma generate && prisma migrate deploy && next build",
+    "preview": "prisma generate && prisma migrate deploy && next build && next start",
     "build": "next build",
     "db:generate": "prisma migrate dev",
     "db:migrate": "prisma migrate deploy",
@@ -26,9 +27,10 @@
     "@t3-oss/env-nextjs": "^0.13.10",
     "@tailwindcss/postcss": "^4.2.1",
     "@tanstack/react-query": "^5.90.21",
-    "@trpc/client": "^11.11.0",
-    "@trpc/react-query": "^11.11.0",
-    "@trpc/server": "^11.11.0",
+    "@trpc/client": "^11.12.0",
+    "@trpc/react-query": "^11.12.0",
+    "@trpc/server": "^11.12.0",
+    "better-auth": "^1.5.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
@@ -51,15 +53,15 @@
     "zustand": "^5.0.11"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3.3.4",
+    "@eslint/eslintrc": "^3.3.5",
     "@types/eslint": "^9.6.1",
-    "@types/node": "^25.3.3",
+    "@types/node": "^25.4.0",
     "@types/pg": "^8.18.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "@typescript-eslint/eslint-plugin": "^8.56.1",
-    "@typescript-eslint/parser": "^8.56.1",
-    "eslint": "^10.0.2",
+    "@typescript-eslint/eslint-plugin": "^8.57.0",
+    "@typescript-eslint/parser": "^8.57.0",
+    "eslint": "^10.0.3",
     "eslint-config-next": "^16.1.6",
     "postcss": "^8.5.8",
     "prettier": "^3.8.1",
@@ -69,7 +71,7 @@
     "tsx": "^4.21.0",
     "tw-animate-css": "^1.4.0",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.56.1"
+    "typescript-eslint": "^8.57.0"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

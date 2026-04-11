@@ -55,4 +55,19 @@ export const logRouter = createTRPCRouter({
         },
       });
     }),
+
+  getLogsByApeId: publicProcedure
+    .input(z.object({ apeId: z.number() }))
+    .query(async ({ ctx, input }) => {
+      return ctx.db.log.findMany({
+        where: { apeId: input.apeId },
+        include: {
+          researchProject: true,
+          session: true,
+          method: true,
+          researcher: true,
+        },
+        orderBy: { startDatetime: "desc" },
+      });
+    }),
 });

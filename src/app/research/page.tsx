@@ -9,9 +9,17 @@ import {
   FormLabel,
   FormMessage,
 } from "~/components/ui/form";
-import { CalendarIcon, Eye, PlusCircle, Trash } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  CalendarIcon,
+  Eye,
+  PlusCircle,
+  Trash,
+} from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { format } from "date-fns";
 import { Button } from "~/components/ui/button";
 import { Calendar } from "~/components/ui/calendar";
@@ -54,10 +62,76 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
+type BackendSortField =
+  | "id"
+  | "title"
+  | "description"
+  | "startDate"
+  | "endDate"
+  | "createdAt";
+type AllSortField = BackendSortField | "locationName" | "locationType";
+
+function isBackendField(f: AllSortField): f is BackendSortField {
+  return f !== "locationName" && f !== "locationType";
+}
+
+function SortIcon({
+  field,
+  sort,
+}: {
+  field: AllSortField;
+  sort: { field: AllSortField; dir: "asc" | "desc" };
+}) {
+  if (sort.field !== field)
+    return <ArrowUpDown className="ml-1 inline size-3 opacity-50" />;
+  return sort.dir === "asc" ? (
+    <ArrowUp className="ml-1 inline size-3" />
+  ) : (
+    <ArrowDown className="ml-1 inline size-3" />
+  );
+}
+
 export default function ResearchPage() {
   const [isOpen, setIsOpen] = useState(false);
+  const [sort, setSort] = useState<{
+    field: AllSortField;
+    dir: "asc" | "desc";
+  }>({
+    field: "createdAt",
+    dir: "desc",
+  });
 
-  const { data, refetch } = api.research.getResearches.useQuery();
+  function handleSort(field: AllSortField) {
+    setSort((prev) =>
+      prev.field === field
+        ? { field, dir: prev.dir === "asc" ? "desc" : "asc" }
+        : { field, dir: "asc" },
+    );
+  }
+
+  const { data, refetch } = api.research.getResearches.useQuery({
+    sortField: isBackendField(sort.field) ? sort.field : "createdAt",
+    sortDir: isBackendField(sort.field) ? sort.dir : "desc",
+  });
+
+  const displayData = useMemo(() => {
+    if (!data) return [];
+    if (sort.field === "locationName") {
+      return [...data].sort((a, b) => {
+        const av = a.locations.map((l) => l.name).join(", ");
+        const bv = b.locations.map((l) => l.name).join(", ");
+        return sort.dir === "asc" ? av.localeCompare(bv) : bv.localeCompare(av);
+      });
+    }
+    if (sort.field === "locationType") {
+      return [...data].sort((a, b) => {
+        const av = a.locations.map((l) => l.type).join(", ");
+        const bv = b.locations.map((l) => l.type).join(", ");
+        return sort.dir === "asc" ? av.localeCompare(bv) : bv.localeCompare(av);
+      });
+    }
+    return data;
+  }, [data, sort]);
   const router = useRouter();
 
   const addResearch = api.research.addResearch.useMutation();
@@ -231,19 +305,67 @@ export default function ResearchPage() {
       <Table className="w-full">
         <TableHeader>
           <TableRow>
-            <TableHead>ID</TableHead>
-            <TableHead>Title</TableHead>
-            <TableHead>Description</TableHead>
-            <TableHead>Location</TableHead>
-            <TableHead>Location Type</TableHead>
-            <TableHead className="min-w-32">Start Date</TableHead>
-            <TableHead className="min-w-32">End Date</TableHead>
-            <TableHead>Created At</TableHead>
+            <TableHead
+              className="cursor-pointer select-none"
+              onClick={() => handleSort("id")}
+            >
+              ID
+              <SortIcon field="id" sort={sort} />
+            </TableHead>
+            <TableHead
+              className="cursor-pointer select-none"
+              onClick={() => handleSort("title")}
+            >
+              Title
+              <SortIcon field="title" sort={sort} />
+            </TableHead>
+            <TableHead
+              className="cursor-pointer select-none"
+              onClick={() => handleSort("description")}
+            >
+              Description
+              <SortIcon field="description" sort={sort} />
+            </TableHead>
+            <TableHead
+              className="cursor-pointer select-none"
+              onClick={() => handleSort("locationName")}
+            >
+              Location
+              <SortIcon field="locationName" sort={sort} />
+            </TableHead>
+            <TableHead
+              className="cursor-pointer select-none"
+              onClick={() => handleSort("locationType")}
+            >
+              Location Type
+              <SortIcon field="locationType" sort={sort} />
+            </TableHead>
+            <TableHead
+              className="min-w-32 cursor-pointer select-none"
+              onClick={() => handleSort("startDate")}
+            >
+              Start Date
+              <SortIcon field="startDate" sort={sort} />
+            </TableHead>
+            <TableHead
+              className="min-w-32 cursor-pointer select-none"
+              onClick={() => handleSort("endDate")}
+            >
+              End Date
+              <SortIcon field="endDate" sort={sort} />
+            </TableHead>
+            <TableHead
+              className="cursor-pointer select-none"
+              onClick={() => handleSort("createdAt")}
+            >
+              Created At
+              <SortIcon field="createdAt" sort={sort} />
+            </TableHead>
             <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {data?.map((research) => (
+          {displayData.map((research) => (
             <TableRow key={research.id}>
               <TableCell>{research.id}</TableCell>
               <TableCell>
@@ -266,10 +388,16 @@ export default function ResearchPage() {
                   onClick={() => router.push(`/research/${research.id}`)}
                   variant="ghost"
                   size="icon"
+                  aria-label={`View ${research.title}`}
                 >
                   <Eye />
                 </Button>
-                <Button variant="ghost" className="text-red-500" size="icon">
+                <Button
+                  variant="ghost"
+                  className="text-red-500"
+                  size="icon"
+                  aria-label={`Delete ${research.title}`}
+                >
                   <Trash />
                 </Button>
               </TableCell>

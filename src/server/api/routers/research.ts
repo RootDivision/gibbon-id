@@ -13,12 +13,28 @@ export const researchRouter = createTRPCRouter({
     return { apes, projects, sessions, logs };
   }),
 
-  getResearches: publicProcedure.query(async ({ ctx }) => {
-    return ctx.db.researchProject.findMany({
-      include: { locations: true },
-      orderBy: { createdAt: "desc" },
-    });
-  }),
+  getResearches: publicProcedure
+    .input(
+      z.object({
+        sortField: z
+          .enum([
+            "id",
+            "title",
+            "description",
+            "startDate",
+            "endDate",
+            "createdAt",
+          ])
+          .default("createdAt"),
+        sortDir: z.enum(["asc", "desc"]).default("desc"),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      return ctx.db.researchProject.findMany({
+        include: { locations: true },
+        orderBy: { [input.sortField]: input.sortDir },
+      });
+    }),
 
   getResearchById: publicProcedure
     .input(z.object({ researchId: z.number() }))

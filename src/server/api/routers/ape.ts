@@ -14,12 +14,28 @@ const apeInput = z.object({
 });
 
 export const apeRouter = createTRPCRouter({
-  getApes: publicProcedure.query(async ({ ctx }) => {
-    return ctx.db.ape.findMany({
-      orderBy: { name: "asc" },
-      include: { species: true, group: true },
-    });
-  }),
+  getApes: publicProcedure
+    .input(
+      z.object({
+        sortField: z.enum(["id", "name", "sex", "ageClass"]).default("name"),
+        sortDir: z.enum(["asc", "desc"]).default("asc"),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const apeResponse = ctx.db.ape.findMany({
+        orderBy: { [input.sortField]: input.sortDir },
+        include: { species: true, group: true },
+      });
+
+      const modified = await apeResponse.then((apes) =>
+        apes.map((ape) => ({
+          ...ape,
+          fakeProperty: "Fake 123",
+        })),
+      );
+
+      return modified;
+    }),
 
   getSpecies: publicProcedure.query(async ({ ctx }) => {
     return ctx.db.species.findMany({ orderBy: { name: "asc" } });
@@ -40,5 +56,14 @@ export const apeRouter = createTRPCRouter({
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       return ctx.db.ape.delete({ where: { id: input.id } });
+    }),
+
+  getApeById: publicProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ ctx, input }) => {
+      return ctx.db.ape.findUnique({
+        where: { id: input.id },
+        include: { species: true, group: true },
+      });
     }),
 });

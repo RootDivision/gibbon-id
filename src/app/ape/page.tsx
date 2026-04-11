@@ -1,8 +1,15 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Pencil, PlusCircle, Trash2 } from "lucide-react";
-import { useState } from "react";
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  Pencil,
+  PlusCircle,
+  Trash2,
+} from "lucide-react";
+import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import z from "zod";
@@ -38,6 +45,7 @@ import {
   TableHeader,
   TableRow,
 } from "~/components/ui/table";
+import Link from "next/link";
 import { api, type RouterOutputs } from "~/trpc/react";
 
 const SEX_OPTIONS = ["Male", "Female"] as const;
@@ -54,6 +62,29 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 type ApeRow = RouterOutputs["ape"]["getApes"][number];
+
+type BackendSortField = "id" | "name" | "sex" | "ageClass";
+type AllSortField = BackendSortField | "species" | "group";
+
+function isBackendField(f: AllSortField): f is BackendSortField {
+  return f !== "species" && f !== "group";
+}
+
+function SortIcon({
+  field,
+  sort,
+}: {
+  field: AllSortField;
+  sort: { field: AllSortField; dir: "asc" | "desc" };
+}) {
+  if (sort.field !== field)
+    return <ArrowUpDown className="ml-1 inline size-3 opacity-50" />;
+  return sort.dir === "asc" ? (
+    <ArrowUp className="ml-1 inline size-3" />
+  ) : (
+    <ArrowDown className="ml-1 inline size-3" />
+  );
+}
 
 const EMPTY_VALUES: FormValues = {
   name: "",
@@ -76,8 +107,45 @@ function apeToFormValues(ape: ApeRow): FormValues {
 export default function ApePage() {
   const [dialogApe, setDialogApe] = useState<ApeRow | null | "add">(null);
   const [deleteApe, setDeleteApe] = useState<ApeRow | null>(null);
+  const [sort, setSort] = useState<{
+    field: AllSortField;
+    dir: "asc" | "desc";
+  }>({
+    field: "name",
+    dir: "asc",
+  });
 
-  const { data: apes, refetch } = api.ape.getApes.useQuery();
+  function handleSort(field: AllSortField) {
+    setSort((prev) =>
+      prev.field === field
+        ? { field, dir: prev.dir === "asc" ? "desc" : "asc" }
+        : { field, dir: "asc" },
+    );
+  }
+
+  const { data: apes, refetch } = api.ape.getApes.useQuery({
+    sortField: isBackendField(sort.field) ? sort.field : "name",
+    sortDir: isBackendField(sort.field) ? sort.dir : "asc",
+  });
+
+  const displayApes = useMemo(() => {
+    if (!apes) return [];
+    if (sort.field === "species") {
+      return [...apes].sort((a, b) => {
+        const av = a.species?.name ?? "";
+        const bv = b.species?.name ?? "";
+        return sort.dir === "asc" ? av.localeCompare(bv) : bv.localeCompare(av);
+      });
+    }
+    if (sort.field === "group") {
+      return [...apes].sort((a, b) => {
+        const av = a.group?.name ?? "";
+        const bv = b.group?.name ?? "";
+        return sort.dir === "asc" ? av.localeCompare(bv) : bv.localeCompare(av);
+      });
+    }
+    return apes;
+  }, [apes, sort]);
   const { data: species } = api.ape.getSpecies.useQuery();
   const { data: groups } = api.apeGroup.getApeGroups.useQuery();
 
@@ -372,20 +440,63 @@ export default function ApePage() {
         <Table className="w-full">
           <TableHeader>
             <TableRow>
-              <TableHead>ID</TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead>Species</TableHead>
-              <TableHead>Group</TableHead>
-              <TableHead>Sex</TableHead>
-              <TableHead>Age Class</TableHead>
+              <TableHead
+                className="cursor-pointer select-none"
+                onClick={() => handleSort("id")}
+              >
+                ID
+                <SortIcon field="id" sort={sort} />
+              </TableHead>
+              <TableHead
+                className="cursor-pointer select-none"
+                onClick={() => handleSort("name")}
+              >
+                Name
+                <SortIcon field="name" sort={sort} />
+              </TableHead>
+              <TableHead
+                className="cursor-pointer select-none"
+                onClick={() => handleSort("species")}
+              >
+                Species
+                <SortIcon field="species" sort={sort} />
+              </TableHead>
+              <TableHead
+                className="cursor-pointer select-none"
+                onClick={() => handleSort("group")}
+              >
+                Group
+                <SortIcon field="group" sort={sort} />
+              </TableHead>
+              <TableHead
+                className="cursor-pointer select-none"
+                onClick={() => handleSort("sex")}
+              >
+                Sex
+                <SortIcon field="sex" sort={sort} />
+              </TableHead>
+              <TableHead
+                className="cursor-pointer select-none"
+                onClick={() => handleSort("ageClass")}
+              >
+                Age Class
+                <SortIcon field="ageClass" sort={sort} />
+              </TableHead>
               <TableHead className="w-24"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {apes?.map((ape) => (
+            {displayApes.map((ape) => (
               <TableRow key={ape.id}>
                 <TableCell>{ape.id}</TableCell>
-                <TableCell>{ape.name}</TableCell>
+                <TableCell>
+                  <Link
+                    href={`/ape/${ape.id}`}
+                    className="font-medium hover:underline"
+                  >
+                    {ape.name}
+                  </Link>
+                </TableCell>
                 <TableCell>{ape.species?.name ?? "—"}</TableCell>
                 <TableCell>{ape.group?.name ?? "—"}</TableCell>
                 <TableCell>{ape.sex ?? "—"}</TableCell>
@@ -395,6 +506,7 @@ export default function ApePage() {
                     <Button
                       size="icon"
                       variant="ghost"
+                      aria-label={`Edit ${ape.name}`}
                       onClick={() => openEdit(ape)}
                     >
                       <Pencil className="size-4" />
@@ -403,6 +515,7 @@ export default function ApePage() {
                       size="icon"
                       variant="ghost"
                       className="text-destructive hover:text-destructive"
+                      aria-label={`Delete ${ape.name}`}
                       onClick={() => setDeleteApe(ape)}
                     >
                       <Trash2 className="size-4" />
