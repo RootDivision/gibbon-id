@@ -71,6 +71,31 @@ export default function ResearchPage() {
   });
 
   const addApeGroupToProject = api.apeGroup.addApeGroupToProject.useMutation();
+  const addResearcherToProject =
+    api.research.addResearcherToProject.useMutation();
+
+  const { data: allResearchers = [] } =
+    api.researcher.getResearchers.useQuery();
+
+  const [addResearcherOpen, setAddResearcherOpen] = useState(false);
+  const [selectedResearcherId, setSelectedResearcherId] = useState("");
+
+  function saveResearcher() {
+    if (!selectedResearcherId) return;
+    addResearcherToProject.mutate(
+      {
+        researchProjectId: Number(researchId),
+        researcherId: Number(selectedResearcherId),
+      },
+      {
+        onSuccess: () => {
+          void refetchProject();
+          setAddResearcherOpen(false);
+          setSelectedResearcherId("");
+        },
+      },
+    );
+  }
 
   const [addGroupOpen, setAddGroupOpen] = useState(false);
   const [groupName, setGroupName] = useState("");
@@ -118,13 +143,7 @@ export default function ResearchPage() {
     ).values(),
   ).sort((a, b) => (a?.id ?? 0) - (b?.id ?? 0));
 
-  const researchers = Array.from(
-    new Map(
-      logsByResearchId
-        .filter((l) => l.researcher)
-        .map((l) => [l.researcherId, l.researcher]),
-    ).values(),
-  ).sort((a, b) => (a?.lastName ?? "").localeCompare(b?.lastName ?? ""));
+  const projectResearchers = project?.researchers ?? [];
 
   return (
     <div className="flex flex-col gap-4">
@@ -144,31 +163,35 @@ export default function ResearchPage() {
       <p>{project?.createdAt.toDateString()}</p>
       <p>{project?.description}</p>
 
-      {researchers.length > 0 && (
-        <>
-          <h2 className="text-lg font-bold">Researchers</h2>
-          <div className="flex gap-4">
-            {researchers.map((r) => (
-              <Card key={r?.id} className="w-96 shrink">
-                <CardHeader className="flex flex-row items-center gap-4">
-                  <Avatar>
-                    <AvatarFallback>
-                      {(r?.firstName?.[0] ?? "") + (r?.lastName?.[0] ?? "")}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex flex-col gap-1">
-                    <CardTitle className="text-base">
-                      {r?.firstName} {r?.lastName}
-                    </CardTitle>
-                    <CardContent className="text-muted-foreground p-0 text-sm">
-                      {r?.email}
-                    </CardContent>
-                  </div>
-                </CardHeader>
-              </Card>
-            ))}
-          </div>
-        </>
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-bold">Researchers</h2>
+        <Button size="sm" onClick={() => setAddResearcherOpen(true)}>
+          <Plus className="mr-1 size-4" />
+          Add Researcher
+        </Button>
+      </div>
+      {projectResearchers.length > 0 && (
+        <div className="flex flex-wrap gap-4">
+          {projectResearchers.map((r) => (
+            <Card key={r.id} className="w-72">
+              <CardHeader className="flex flex-row items-center gap-4">
+                <Avatar>
+                  <AvatarFallback>
+                    {(r.firstName[0] ?? "") + (r.lastName[0] ?? "")}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col gap-1">
+                  <CardTitle className="text-base">
+                    {r.firstName} {r.lastName}
+                  </CardTitle>
+                  <CardContent className="text-muted-foreground p-0 text-sm">
+                    {r.email}
+                  </CardContent>
+                </div>
+              </CardHeader>
+            </Card>
+          ))}
+        </div>
       )}
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-bold">Ape Groups</h2>
@@ -499,6 +522,64 @@ export default function ResearchPage() {
                 onClick={saveApeGroup}
               >
                 {addApeGroupToProject.isPending ? "Saving…" : "Save"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Researcher dialog */}
+      <Dialog
+        open={addResearcherOpen}
+        onOpenChange={(open) => {
+          if (!open) setSelectedResearcherId("");
+          setAddResearcherOpen(open);
+        }}
+      >
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Add Researcher</DialogTitle>
+            <DialogDescription>
+              Link an existing researcher to this project.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="researcher-select">Researcher</Label>
+              <Select
+                value={selectedResearcherId}
+                onValueChange={setSelectedResearcherId}
+              >
+                <SelectTrigger id="researcher-select" className="w-full">
+                  <SelectValue placeholder="Select a researcher…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {allResearchers
+                    .filter(
+                      (r) => !projectResearchers.some((pr) => pr.id === r.id),
+                    )
+                    .map((r) => (
+                      <SelectItem key={r.id} value={String(r.id)}>
+                        {r.firstName} {r.lastName}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => setAddResearcherOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                disabled={
+                  !selectedResearcherId || addResearcherToProject.isPending
+                }
+                onClick={saveResearcher}
+              >
+                {addResearcherToProject.isPending ? "Saving…" : "Add"}
               </Button>
             </div>
           </div>

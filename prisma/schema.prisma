@@ -34,9 +34,10 @@ model ResearchProject {
   endDate     DateTime?
   createdAt   DateTime  @default(now())
 
-  logs      Log[]
-  locations Location[]
-  apeGroups ApeGroup[]
+  logs        Log[]
+  locations   Location[]
+  apeGroups   ApeGroup[]
+  researchers Researcher[]
 }
 
 model Researcher {
@@ -45,7 +46,8 @@ model Researcher {
   lastName  String @db.VarChar(255)
   email     String @db.VarChar(255)
 
-  logs Log[]
+  logs             Log[]
+  researchProjects ResearchProject[]
 }
 
 model Method {

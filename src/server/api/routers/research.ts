@@ -43,6 +43,7 @@ export const researchRouter = createTRPCRouter({
         where: { id: input.researchId },
         include: {
           locations: true,
+          researchers: true,
           apeGroups: {
             include: {
               apes: { include: { species: true } },
@@ -101,5 +102,37 @@ export const researchRouter = createTRPCRouter({
       });
 
       return newResearch;
+    }),
+
+  addResearcherToProject: publicProcedure
+    .input(
+      z.object({
+        researchProjectId: z.number(),
+        researcherId: z.number(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      return ctx.db.researchProject.update({
+        where: { id: input.researchProjectId },
+        data: {
+          researchers: { connect: { id: input.researcherId } },
+        },
+      });
+    }),
+
+  removeResearcherFromProject: publicProcedure
+    .input(
+      z.object({
+        researchProjectId: z.number(),
+        researcherId: z.number(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      return ctx.db.researchProject.update({
+        where: { id: input.researchProjectId },
+        data: {
+          researchers: { disconnect: { id: input.researcherId } },
+        },
+      });
     }),
 });

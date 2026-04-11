@@ -472,6 +472,7 @@ async function main() {
         where: { id: 1 },
         update: {
           apeGroups: { set: [{ id: groupDanum.id }] },
+          researchers: { set: [{ id: alice.id }, { id: bob.id }] },
         },
         create: {
           title: "Gibbon Vocal Behaviour Study – Borneo 2026",
@@ -481,12 +482,14 @@ async function main() {
           endDate: new Date("2026-12-31"),
           locations: { connect: [{ id: locationBorneo.id }] },
           apeGroups: { connect: [{ id: groupDanum.id }] },
+          researchers: { connect: [{ id: alice.id }, { id: bob.id }] },
         },
       }),
       prisma.researchProject.upsert({
         where: { id: 2 },
         update: {
           apeGroups: { set: [{ id: groupLeuser.id }] },
+          researchers: { set: [{ id: alice.id }, { id: bob.id }, { id: carla.id }] },
         },
         create: {
           title: "Siamang Social Structure – Sumatra 2026",
@@ -498,6 +501,9 @@ async function main() {
             connect: [{ id: locationBorneo.id }, { id: locationSumatra.id }],
           },
           apeGroups: { connect: [{ id: groupLeuser.id }] },
+          researchers: {
+            connect: [{ id: alice.id }, { id: bob.id }, { id: carla.id }],
+          },
         },
       }),
       prisma.researchProject.upsert({
@@ -505,6 +511,9 @@ async function main() {
         update: {
           apeGroups: {
             set: [{ id: groupKhaoYai.id }, { id: groupKinabalu.id }],
+          },
+          researchers: {
+            set: [{ id: carla.id }, { id: david.id }],
           },
         },
         create: {
@@ -518,6 +527,9 @@ async function main() {
           apeGroups: {
             connect: [{ id: groupKhaoYai.id }, { id: groupKinabalu.id }],
           },
+          researchers: {
+            connect: [{ id: carla.id }, { id: david.id }],
+          },
         },
       }),
       prisma.researchProject.upsert({
@@ -525,6 +537,9 @@ async function main() {
         update: {
           apeGroups: {
             set: [{ id: groupUjung.id }, { id: groupCatTien.id }],
+          },
+          researchers: {
+            set: [{ id: elena.id }, { id: frank.id }],
           },
         },
         create: {
@@ -538,6 +553,9 @@ async function main() {
           },
           apeGroups: {
             connect: [{ id: groupUjung.id }, { id: groupCatTien.id }],
+          },
+          researchers: {
+            connect: [{ id: elena.id }, { id: frank.id }],
           },
         },
       }),
