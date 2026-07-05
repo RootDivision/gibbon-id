@@ -43,6 +43,19 @@ export default async function Home() {
     <HydrateClient>
       <h1>Dashboard</h1>
 
+      <div className="mb-6 space-y-2 text-sm text-muted-foreground">
+        <p>Welcome to Gibbon ID, your central hub for gibbon behavioural research. 🐒</p>
+        <br />
+        <p>Here is what you can do:</p>
+        <ul className="space-y-1">
+          <li>📊 <strong>Track Research Projects:</strong> Maintain an organized, centralized overview of all your study groups and long-term data.</li>
+          <li>⏱️ <strong>Live Observation Logging:</strong> Use the built-in timer to log primary and secondary behaviours in real-time as you observe (even multiple apes).</li>
+          <li>🔍 <strong>Analyze &amp; Review:</strong> Easily sort, filter, and review historical logs grouped by individual apes.</li>
+        </ul>
+        <br />
+        <p>Ready to start? Head over to the sidebar to log a new session or view your active projects.</p>
+      </div>
+
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {metrics.map(({ label, value, icon: Icon, href }) => (
           <Link key={label} href={href}>
