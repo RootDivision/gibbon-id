@@ -1406,7 +1406,7 @@ export default function ResearchPage() {
                         }
                       />
                     </div>
-                    <div className="flex justify-between">
+                    <div className="flex justify-end gap-2">
                       <Button
                         variant="outline"
                         size="sm"
@@ -1536,7 +1536,7 @@ export default function ResearchPage() {
                         placeholder="Optional notes"
                       />
                     </div>
-                    <div className="flex justify-between">
+                    <div className="flex justify-end gap-2">
                       <Button
                         size="sm"
                         variant="outline"
@@ -1703,7 +1703,7 @@ export default function ResearchPage() {
                         />
                       </div>
                     </div>
-                    <div className="flex justify-between">
+                    <div className="flex justify-end gap-2">
                       <Button
                         size="sm"
                         variant="outline"
