@@ -48,6 +48,7 @@ export default function LogPage() {
   const [elapsed, setElapsed] = useState(0);
   const [running, setRunning] = useState(false);
   const [behaviour, setBehaviour] = useState("");
+  const [secondaryBehaviour, setSecondaryBehaviour] = useState("");
   const [apeId, setApeId] = useState("");
   const [sessionIntervalId, setSessionIntervalId] = useState<number | null>(
     null,
@@ -82,6 +83,7 @@ export default function LogPage() {
     setElapsed(0);
     setSessionIntervalId(null);
     setBehaviour("");
+    setSecondaryBehaviour("");
     setApeId("");
     startedAtRef.current = null;
   }
@@ -128,6 +130,7 @@ export default function LogPage() {
     addLog.mutate(
       {
         behaviour: behaviour,
+        secondaryBehaviour: secondaryBehaviour || undefined,
         startDatetime: startedAtRef.current!.toISOString(),
         endDatetime: endTime.toISOString(),
         apeId: Number(apeId),
@@ -141,6 +144,7 @@ export default function LogPage() {
           toast.success("Log saved.");
           void refetchSessionLogs();
           setBehaviour("");
+          setSecondaryBehaviour("");
           // next log starts where this one ended
           startedAtRef.current = endTime;
         },
@@ -236,9 +240,16 @@ export default function LogPage() {
         <div className="flex gap-4">
           <Input
             id="behaviour"
-            placeholder="Behaviour"
+            placeholder="Primary behaviour *"
             value={behaviour}
             onChange={(e) => setBehaviour(e.target.value)}
+            disabled={!running}
+          />
+          <Input
+            id="secondaryBehaviour"
+            placeholder="Secondary behaviour (optional)"
+            value={secondaryBehaviour}
+            onChange={(e) => setSecondaryBehaviour(e.target.value)}
             disabled={!running}
           />
           <Button type="submit" disabled={!running || !apeId || addLog.isPending}>
@@ -254,7 +265,8 @@ export default function LogPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>ID</TableHead>
-                <TableHead>Behaviour</TableHead>
+                <TableHead>Primary Behaviour</TableHead>
+                <TableHead>Secondary Behaviour</TableHead>
                 <TableHead>Start</TableHead>
                 <TableHead>End</TableHead>
                 <TableHead>Ape</TableHead>
@@ -279,6 +291,7 @@ export default function LogPage() {
                   <TableRow key={log.id}>
                     <TableCell>{log.id}</TableCell>
                     <TableCell>{log.behaviour}</TableCell>
+                    <TableCell>{log.secondaryBehaviour ?? "—"}</TableCell>
                     <TableCell>
                       {new Date(log.startDatetime).toLocaleTimeString()}
                     </TableCell>

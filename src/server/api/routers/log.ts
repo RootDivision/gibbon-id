@@ -30,6 +30,7 @@ export const logRouter = createTRPCRouter({
     .input(
       z.object({
         behaviour: z.string().min(1),
+        secondaryBehaviour: z.string().optional(),
         startDatetime: z.string(),
         endDatetime: z.string(),
         notes: z.string().optional(),
@@ -44,6 +45,7 @@ export const logRouter = createTRPCRouter({
       return ctx.db.log.create({
         data: {
           behaviour: input.behaviour,
+          secondaryBehaviour: input.secondaryBehaviour,
           startDatetime: new Date(input.startDatetime),
           endDatetime: new Date(input.endDatetime),
           notes: input.notes,

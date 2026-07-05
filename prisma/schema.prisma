@@ -8,11 +8,12 @@ datasource db {
 }
 
 model Log {
-  id                Int      @id @default(autoincrement())
-  behaviour         String   @db.VarChar(255)
-  startDatetime     DateTime
-  endDatetime       DateTime
-  notes             String?  @db.VarChar(255)
+  id                  Int      @id @default(autoincrement())
+  behaviour           String   @db.VarChar(255)
+  secondaryBehaviour  String?  @db.VarChar(255)
+  startDatetime       DateTime
+  endDatetime         DateTime
+  notes               String?  @db.VarChar(255)
   apeId             Int
   researchProjectId Int
   sessionId         Int
