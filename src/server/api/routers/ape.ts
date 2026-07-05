@@ -43,7 +43,16 @@ export const apeRouter = createTRPCRouter({
       const apeResponse = ctx.db.ape.findMany({
         where,
         orderBy: { [input.sortField]: input.sortDir },
-        include: { species: true, group: true },
+        include: {
+          species: true,
+          group: {
+            include: {
+              researchProjects: {
+                include: { locations: true },
+              },
+            },
+          },
+        },
       });
 
       const modified = await apeResponse.then((apes) =>

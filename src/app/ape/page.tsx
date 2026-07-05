@@ -71,6 +71,8 @@ type ApeFilters = {
   groupId: string;
   sex: string;
   ageClass: string;
+  location: string;
+  locationType: string;
 };
 
 const EMPTY_FILTERS: ApeFilters = {
@@ -79,15 +81,17 @@ const EMPTY_FILTERS: ApeFilters = {
   groupId: "",
   sex: "",
   ageClass: "",
+  location: "",
+  locationType: "",
 };
 
 type ApeRow = RouterOutputs["ape"]["getApes"][number];
 
 type BackendSortField = "id" | "name" | "sex" | "ageClass";
-type AllSortField = BackendSortField | "species" | "group";
+type AllSortField = BackendSortField | "species" | "group" | "location" | "locationType";
 
 function isBackendField(f: AllSortField): f is BackendSortField {
-  return f !== "species" && f !== "group";
+  return f !== "species" && f !== "group" && f !== "location" && f !== "locationType";
 }
 
 function SortIcon({
@@ -170,22 +174,54 @@ export default function ApePage() {
 
   const displayApes = useMemo(() => {
     if (!apes) return [];
+    let result = [...apes];
+
+    if (filters.location) {
+      const search = filters.location.toLowerCase();
+      result = result.filter((ape) =>
+        ape.group?.researchProjects.some((p) =>
+          p.locations.some((l) => l.name.toLowerCase().includes(search)),
+        ) ?? false,
+      );
+    }
+    if (filters.locationType) {
+      result = result.filter((ape) =>
+        ape.group?.researchProjects.some((p) =>
+          p.locations.some((l) => l.type === filters.locationType),
+        ) ?? false,
+      );
+    }
+
     if (sort.field === "species") {
-      return [...apes].sort((a, b) => {
+      return result.sort((a, b) => {
         const av = a.species?.name ?? "";
         const bv = b.species?.name ?? "";
         return sort.dir === "asc" ? av.localeCompare(bv) : bv.localeCompare(av);
       });
     }
     if (sort.field === "group") {
-      return [...apes].sort((a, b) => {
+      return result.sort((a, b) => {
         const av = a.group?.name ?? "";
         const bv = b.group?.name ?? "";
         return sort.dir === "asc" ? av.localeCompare(bv) : bv.localeCompare(av);
       });
     }
-    return apes;
-  }, [apes, sort]);
+    if (sort.field === "location") {
+      return result.sort((a, b) => {
+        const av = a.group?.researchProjects[0]?.locations[0]?.name ?? "";
+        const bv = b.group?.researchProjects[0]?.locations[0]?.name ?? "";
+        return sort.dir === "asc" ? av.localeCompare(bv) : bv.localeCompare(av);
+      });
+    }
+    if (sort.field === "locationType") {
+      return result.sort((a, b) => {
+        const av = a.group?.researchProjects[0]?.locations[0]?.type ?? "";
+        const bv = b.group?.researchProjects[0]?.locations[0]?.type ?? "";
+        return sort.dir === "asc" ? av.localeCompare(bv) : bv.localeCompare(av);
+      });
+    }
+    return result;
+  }, [apes, sort, filters.location, filters.locationType]);
   const { data: species } = api.ape.getSpecies.useQuery();
   const { data: groups } = api.apeGroup.getApeGroups.useQuery();
 
@@ -323,7 +359,7 @@ export default function ApePage() {
               Clear all
             </button>
           </div>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
             <div className="space-y-1">
               <Label htmlFor="filter-species" className="text-xs">
                 Species
@@ -411,6 +447,37 @@ export default function ApePage() {
                       {a}
                     </SelectItem>
                   ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="filter-location" className="text-xs">
+                Location
+              </Label>
+              <Input
+                id="filter-location"
+                placeholder="Search location…"
+                value={filters.location}
+                onChange={(e) => setFilter("location", e.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="filter-location-type" className="text-xs">
+                Location Type
+              </Label>
+              <Select
+                value={filters.locationType || "all"}
+                onValueChange={(v) =>
+                  setFilter("locationType", v === "all" ? "" : v)
+                }
+              >
+                <SelectTrigger id="filter-location-type" className="w-full">
+                  <SelectValue placeholder="All" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="Captive">Captive</SelectItem>
+                  <SelectItem value="Wild">Wild</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -641,6 +708,20 @@ export default function ApePage() {
                 Age Class
                 <SortIcon field="ageClass" sort={sort} />
               </TableHead>
+              <TableHead
+                className="cursor-pointer select-none"
+                onClick={() => handleSort("location")}
+              >
+                Location
+                <SortIcon field="location" sort={sort} />
+              </TableHead>
+              <TableHead
+                className="cursor-pointer select-none"
+                onClick={() => handleSort("locationType")}
+              >
+                Location Type
+                <SortIcon field="locationType" sort={sort} />
+              </TableHead>
               <TableHead className="w-24"></TableHead>
             </TableRow>
           </TableHeader>
@@ -659,6 +740,12 @@ export default function ApePage() {
                 <TableCell>{ape.group?.name ?? "—"}</TableCell>
                 <TableCell>{ape.sex ?? "—"}</TableCell>
                 <TableCell>{ape.ageClass ?? "—"}</TableCell>
+                <TableCell>
+                  {ape.group?.researchProjects[0]?.locations[0]?.name ?? "—"}
+                </TableCell>
+                <TableCell>
+                  {ape.group?.researchProjects[0]?.locations[0]?.type ?? "—"}
+                </TableCell>
                 <TableCell>
                   <div className="flex gap-1">
                     <Button
@@ -685,7 +772,7 @@ export default function ApePage() {
             {apes?.length === 0 && (
               <TableRow>
                 <TableCell
-                  colSpan={7}
+                  colSpan={8}
                   className="text-muted-foreground text-center"
                 >
                   No apes found.
