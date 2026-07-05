@@ -267,11 +267,11 @@ export default function LogPage() {
                 <TableHead>ID</TableHead>
                 <TableHead>Primary Behaviour</TableHead>
                 <TableHead>Secondary Behaviour</TableHead>
-                <TableHead>Start</TableHead>
-                <TableHead>End</TableHead>
+                <TableHead>Start Time</TableHead>
+                <TableHead>End Time</TableHead>
+                <TableHead>Time Difference</TableHead>
                 <TableHead>Ape</TableHead>
                 <TableHead>Method</TableHead>
-                <TableHead>Time Difference</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -298,9 +298,9 @@ export default function LogPage() {
                     <TableCell>
                       {new Date(log.endDatetime).toLocaleTimeString()}
                     </TableCell>
+                    <TableCell>{diffFormatted}</TableCell>
                     <TableCell>{log.ape?.name ?? ""}</TableCell>
                     <TableCell>{log.method?.name ?? ""}</TableCell>
-                    <TableCell>{diffFormatted}</TableCell>
                   </TableRow>
                 );
               })}
