@@ -81,6 +81,8 @@ export default function ResearchPage() {
     sortDir: "asc",
   });
 
+  const { data: allSpecies = [] } = api.ape.getSpecies.useQuery();
+
   const addApeGroupToProject = api.apeGroup.addApeGroupToProject.useMutation();
   const addResearcherToProject =
     api.research.addResearcherToProject.useMutation();
@@ -163,8 +165,21 @@ export default function ResearchPage() {
   const [groupName, setGroupName] = useState("");
   const [groupNotes, setGroupNotes] = useState("");
   const [selectedGroupApeIds, setSelectedGroupApeIds] = useState<number[]>([]);
-  const [newApes, setNewApes] = useState<string[]>([]);
+  const [newApes, setNewApes] = useState<
+    {
+      name: string;
+      speciesId?: number;
+      sex?: "Male" | "Female";
+      ageClass?: "Infant" | "Juvenile" | "Subadult" | "Adult";
+    }[]
+  >([]);
   const [newApeName, setNewApeName] = useState("");
+  const [newApeSpeciesId, setNewApeSpeciesId] = useState("");
+  const [newApeSex, setNewApeSex] = useState("");
+  const [newApeAgeClass, setNewApeAgeClass] = useState("");
+  const [apeGroupTab, setApeGroupTab] = useState<"existing" | "new">(
+    "existing",
+  );
 
   const [editTitleOpen, setEditTitleOpen] = useState(false);
   const [titleDraft, setTitleDraft] = useState("");
@@ -211,6 +226,10 @@ export default function ResearchPage() {
     setSelectedGroupApeIds([]);
     setNewApes([]);
     setNewApeName("");
+    setNewApeSpeciesId("");
+    setNewApeSex("");
+    setNewApeAgeClass("");
+    setApeGroupTab("existing");
     setAddGroupOpen(true);
   }
 
@@ -218,8 +237,13 @@ export default function ResearchPage() {
     if (!groupName.trim()) return;
     try {
       const newApeIds: number[] = [];
-      for (const apeName of newApes) {
-        const created = await createApe.mutateAsync({ name: apeName });
+      for (const ape of newApes) {
+        const created = await createApe.mutateAsync({
+          name: ape.name,
+          speciesId: ape.speciesId ?? null,
+          sex: ape.sex ?? null,
+          ageClass: ape.ageClass ?? null,
+        });
         newApeIds.push(created.id);
       }
       addApeGroupToProject.mutate(
@@ -704,6 +728,10 @@ export default function ResearchPage() {
             setSelectedGroupApeIds([]);
             setNewApes([]);
             setNewApeName("");
+            setNewApeSpeciesId("");
+            setNewApeSex("");
+            setNewApeAgeClass("");
+            setApeGroupTab("existing");
           }
           setAddGroupOpen(open);
         }}
@@ -738,89 +766,195 @@ export default function ResearchPage() {
             </div>
 
             <div className="flex flex-col gap-2">
-              <Label className="text-sm font-medium">Add apes</Label>
-              {allApes.length === 0 ? (
-                <p className="text-muted-foreground text-sm">
-                  No apes available.
-                </p>
-              ) : (
-                <div className="grid max-h-64 grid-cols-2 gap-2 overflow-y-auto rounded-md border p-3">
-                  {allApes.map((ape) => (
-                    <div key={ape.id} className="flex items-center gap-2">
-                      <Checkbox
-                        id={`group-ape-${ape.id}`}
-                        checked={selectedGroupApeIds.includes(ape.id)}
-                        onCheckedChange={() => toggleGroupApe(ape.id)}
-                      />
-                      <label
-                        htmlFor={`group-ape-${ape.id}`}
-                        className="cursor-pointer text-sm"
-                      >
-                        {ape.name}
-                        {ape.species && (
-                          <span className="text-muted-foreground ml-1 text-xs">
-                            ({formatSpeciesName(ape.species.name)})
-                          </span>
-                        )}
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {selectedGroupApeIds.length > 0 && (
-                <p className="text-muted-foreground text-xs">
-                  {selectedGroupApeIds.length} ape
-                  {selectedGroupApeIds.length !== 1 ? "s" : ""} selected
-                </p>
-              )}
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <Label className="text-sm font-medium">Create new apes</Label>
-              <div className="flex gap-2">
-                <Input
-                  placeholder="New ape name…"
-                  value={newApeName}
-                  onChange={(e) => setNewApeName(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && newApeName.trim()) {
-                      setNewApes((prev) => [...prev, newApeName.trim()]);
-                      setNewApeName("");
-                    }
-                  }}
-                />
+              <div className="flex rounded-md border">
                 <Button
                   type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={!newApeName.trim()}
-                  onClick={() => {
-                    setNewApes((prev) => [...prev, newApeName.trim()]);
-                    setNewApeName("");
-                  }}
+                  variant={apeGroupTab === "existing" ? "secondary" : "ghost"}
+                  className="flex-1 rounded-r-none"
+                  onClick={() => setApeGroupTab("existing")}
                 >
-                  Add
+                  Existing apes
+                </Button>
+                <Button
+                  type="button"
+                  variant={apeGroupTab === "new" ? "secondary" : "ghost"}
+                  className="flex-1 rounded-l-none"
+                  onClick={() => setApeGroupTab("new")}
+                >
+                  Create new ape
                 </Button>
               </div>
-              {newApes.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {newApes.map((name, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center gap-1 rounded-md border px-2 py-1 text-sm"
-                    >
-                      {name}
-                      <button
-                        type="button"
-                        className="text-muted-foreground hover:text-destructive ml-1"
-                        onClick={() =>
-                          setNewApes((prev) => prev.filter((_, j) => j !== i))
-                        }
-                      >
-                        ×
-                      </button>
+
+              {apeGroupTab === "existing" ? (
+                <>
+                  {allApes.length === 0 ? (
+                    <p className="text-muted-foreground text-sm">
+                      No apes available.
+                    </p>
+                  ) : (
+                    <div className="grid max-h-64 grid-cols-2 gap-2 overflow-y-auto rounded-md border p-3">
+                      {allApes.map((ape) => (
+                        <div key={ape.id} className="flex items-center gap-2">
+                          <Checkbox
+                            id={`group-ape-${ape.id}`}
+                            checked={selectedGroupApeIds.includes(ape.id)}
+                            onCheckedChange={() => toggleGroupApe(ape.id)}
+                          />
+                          <label
+                            htmlFor={`group-ape-${ape.id}`}
+                            className="cursor-pointer text-sm"
+                          >
+                            {ape.name}
+                            {ape.species && (
+                              <span className="text-muted-foreground ml-1 text-xs">
+                                ({formatSpeciesName(ape.species.name)})
+                              </span>
+                            )}
+                          </label>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  )}
+                  {selectedGroupApeIds.length > 0 && (
+                    <p className="text-muted-foreground text-xs">
+                      {selectedGroupApeIds.length} ape
+                      {selectedGroupApeIds.length !== 1 ? "s" : ""} selected
+                    </p>
+                  )}
+                </>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  <div className="flex flex-col gap-1">
+                    <Label htmlFor="new-ape-name">Name</Label>
+                    <Input
+                      id="new-ape-name"
+                      placeholder="e.g. Kiko"
+                      value={newApeName}
+                      onChange={(e) => setNewApeName(e.target.value)}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <Label htmlFor="new-ape-species">Species</Label>
+                    <Select
+                      value={newApeSpeciesId}
+                      onValueChange={setNewApeSpeciesId}
+                    >
+                      <SelectTrigger id="new-ape-species" className="w-full">
+                        <SelectValue placeholder="Select species (optional)…" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {allSpecies.map((s) => (
+                          <SelectItem key={s.id} value={String(s.id)}>
+                            {formatSpeciesName(s.name)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="flex flex-col gap-1">
+                      <Label htmlFor="new-ape-sex">Sex</Label>
+                      <Select value={newApeSex} onValueChange={setNewApeSex}>
+                        <SelectTrigger id="new-ape-sex" className="w-full">
+                          <SelectValue placeholder="Optional…" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Male">Male</SelectItem>
+                          <SelectItem value="Female">Female</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <Label htmlFor="new-ape-age">Age Class</Label>
+                      <Select
+                        value={newApeAgeClass}
+                        onValueChange={setNewApeAgeClass}
+                      >
+                        <SelectTrigger id="new-ape-age" className="w-full">
+                          <SelectValue placeholder="Optional…" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Infant">Infant</SelectItem>
+                          <SelectItem value="Juvenile">Juvenile</SelectItem>
+                          <SelectItem value="Subadult">Subadult</SelectItem>
+                          <SelectItem value="Adult">Adult</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="flex justify-end">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={!newApeName.trim()}
+                      onClick={() => {
+                        setNewApes((prev) => [
+                          ...prev,
+                          {
+                            name: newApeName.trim(),
+                            speciesId: newApeSpeciesId
+                              ? Number(newApeSpeciesId)
+                              : undefined,
+                            sex:
+                              (newApeSex as "Male" | "Female") || undefined,
+                            ageClass:
+                              (newApeAgeClass as
+                                | "Infant"
+                                | "Juvenile"
+                                | "Subadult"
+                                | "Adult") || undefined,
+                          },
+                        ]);
+                        setNewApeName("");
+                        setNewApeSpeciesId("");
+                        setNewApeSex("");
+                        setNewApeAgeClass("");
+                      }}
+                    >
+                      Add to group
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {newApes.length > 0 && (
+                <div className="flex flex-col gap-2">
+                  <p className="text-muted-foreground text-xs font-medium">
+                    {newApes.length} new ape{newApes.length !== 1 ? "s" : ""} to
+                    create
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {newApes.map((ape, i) => (
+                      <div
+                        key={i}
+                        className="flex items-center gap-1 rounded-md border px-2 py-1 text-sm"
+                      >
+                        <span>{ape.name}</span>
+                        {ape.sex && (
+                          <span className="text-muted-foreground">
+                            · {ape.sex}
+                          </span>
+                        )}
+                        {ape.ageClass && (
+                          <span className="text-muted-foreground">
+                            · {ape.ageClass}
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          className="text-muted-foreground hover:text-destructive ml-1"
+                          onClick={() =>
+                            setNewApes((prev) =>
+                              prev.filter((_, j) => j !== i),
+                            )
+                          }
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
