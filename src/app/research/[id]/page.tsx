@@ -299,50 +299,53 @@ export default function ResearchPage() {
         </Button>
       </div>
 
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <h2 className="text-lg font-bold">Researchers</h2>
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="Manage researchers"
-            onClick={() => setManageResearchersOpen(true)}
-          >
-            <Pencil className="size-4" />
-          </Button>
-        </div>
+      <div className="flex items-center gap-2">
+        <h2 className="text-lg font-bold">Researchers</h2>
         <Button
-          size="sm"
-          className="w-36"
-          onClick={() => setAddResearcherOpen(true)}
+          variant="ghost"
+          size="icon"
+          aria-label="Manage researchers"
+          onClick={() => setManageResearchersOpen(true)}
         >
-          <Plus className="mr-1 size-4" />
-          Add Researcher
+          <Pencil className="size-4" />
         </Button>
       </div>
-      {projectResearchers.length > 0 && (
-        <div className="flex flex-wrap gap-4">
-          {projectResearchers.map((r) => (
-            <Card key={r.id} className="w-72">
-              <CardHeader className="flex flex-row items-center gap-4">
-                <Avatar>
-                  <AvatarFallback>
-                    {(r.firstName[0] ?? "") + (r.lastName[0] ?? "")}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex flex-col gap-1">
-                  <CardTitle className="text-base">
-                    {r.firstName} {r.lastName}
-                  </CardTitle>
-                  <CardContent className="text-muted-foreground p-0 text-sm">
-                    {r.email}
-                  </CardContent>
-                </div>
-              </CardHeader>
-            </Card>
-          ))}
-        </div>
-      )}
+      <div className="flex flex-wrap gap-4">
+        {projectResearchers.map((r) => (
+          <Card key={r.id} className="w-72">
+            <CardHeader className="flex flex-row items-center gap-4">
+              <Avatar>
+                <AvatarFallback>
+                  {(r.firstName[0] ?? "") + (r.lastName[0] ?? "")}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex flex-col gap-1">
+                <CardTitle className="text-base">
+                  {r.firstName} {r.lastName}
+                </CardTitle>
+                <CardContent className="text-muted-foreground p-0 text-sm">
+                  {r.email}
+                </CardContent>
+              </div>
+            </CardHeader>
+          </Card>
+        ))}
+        <Card
+          className="w-72 cursor-pointer border-dashed"
+          onClick={() => setAddResearcherOpen(true)}
+        >
+          <CardHeader className="flex flex-row items-center gap-4">
+            <Avatar>
+              <AvatarFallback>
+                <Plus className="size-4" />
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex flex-col gap-1">
+              <CardTitle className="text-base">Add New Researcher</CardTitle>
+            </div>
+          </CardHeader>
+        </Card>
+      </div>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <h2 className="text-lg font-bold">Ape Groups</h2>
