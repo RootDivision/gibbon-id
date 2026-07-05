@@ -98,6 +98,7 @@ export default function ResearchPage() {
   const deleteApeGroup = api.apeGroup.deleteApeGroup.useMutation();
   const updateResearcherMutation = api.researcher.updateResearcher.useMutation();
   const updateLocation = api.research.updateLocation.useMutation();
+  const deleteLocation = api.research.deleteLocation.useMutation();
 
   const { data: allResearchers = [], refetch: refetchResearchers } =
     api.researcher.getResearchers.useQuery();
@@ -1702,7 +1703,28 @@ export default function ResearchPage() {
                         />
                       </div>
                     </div>
-                    <div className="flex justify-end">
+                    <div className="flex justify-between">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-red-500 hover:text-red-600"
+                        disabled={deleteLocation.isPending}
+                        onClick={() =>
+                          deleteLocation.mutate(
+                            { id: loc.id },
+                            {
+                              onSuccess: () => {
+                                void refetchProject();
+                                toast.success("Location deleted.");
+                              },
+                              onError: () =>
+                                toast.error("Failed to delete location."),
+                            },
+                          )
+                        }
+                      >
+                        Delete
+                      </Button>
                       <Button
                         size="sm"
                         disabled={

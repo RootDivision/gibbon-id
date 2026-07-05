@@ -234,4 +234,10 @@ export const researchRouter = createTRPCRouter({
         },
       });
     }),
+
+  deleteLocation: publicProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      return ctx.db.location.delete({ where: { id: input.id } });
+    }),
 });
