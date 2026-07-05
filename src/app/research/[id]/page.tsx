@@ -3,7 +3,7 @@
 import { notFound, useParams } from "next/navigation";
 import Link from "next/link";
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import { CalendarIcon, Pencil, Plus } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { Checkbox } from "~/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
@@ -23,7 +23,7 @@ import {
   SelectValue,
 } from "~/components/ui/select";
 import { Label } from "~/components/ui/label";
-import { formatSpeciesName } from "~/lib/utils";
+import { cn, formatSpeciesName } from "~/lib/utils";
 import { Input } from "~/components/ui/input";
 import {
   Table,
@@ -36,6 +36,14 @@ import {
 } from "~/components/ui/table";
 import { api } from "~/trpc/react";
 import { useAppStore } from "~/app/store";
+import { format } from "date-fns";
+import { Calendar } from "~/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "~/components/ui/popover";
+import { toast } from "sonner";
 
 export default function ResearchPage() {
   const { id: researchId } = useParams<{ id: string }>();
@@ -76,6 +84,14 @@ export default function ResearchPage() {
   const addApeGroupToProject = api.apeGroup.addApeGroupToProject.useMutation();
   const addResearcherToProject =
     api.research.addResearcherToProject.useMutation();
+  const removeResearcherFromProject =
+    api.research.removeResearcherFromProject.useMutation();
+  const updateResearchTitle = api.research.updateResearchTitle.useMutation();
+  const updateResearchDates = api.research.updateResearchDates.useMutation();
+  const updateResearchDescription =
+    api.research.updateResearchDescription.useMutation();
+  const updateApeGroup = api.apeGroup.updateApeGroup.useMutation();
+  const updateLocation = api.research.updateLocation.useMutation();
 
   const { data: allResearchers = [] } =
     api.researcher.getResearchers.useQuery();
@@ -104,6 +120,37 @@ export default function ResearchPage() {
   const [groupName, setGroupName] = useState("");
   const [groupNotes, setGroupNotes] = useState("");
   const [selectedGroupApeIds, setSelectedGroupApeIds] = useState<number[]>([]);
+
+  const [editTitleOpen, setEditTitleOpen] = useState(false);
+  const [titleDraft, setTitleDraft] = useState("");
+
+  const [editDatesOpen, setEditDatesOpen] = useState(false);
+  const [startDateDraft, setStartDateDraft] = useState<Date | undefined>();
+  const [endDateDraft, setEndDateDraft] = useState<Date | undefined>();
+
+  const [editDescOpen, setEditDescOpen] = useState(false);
+  const [descDraft, setDescDraft] = useState("");
+
+  const [manageResearchersOpen, setManageResearchersOpen] = useState(false);
+
+  const [editGroupsOpen, setEditGroupsOpen] = useState(false);
+  const [groupDrafts, setGroupDrafts] = useState<
+    Record<number, { name: string; notes: string }>
+  >({});
+
+  const [editLocationsOpen, setEditLocationsOpen] = useState(false);
+  const [locationDrafts, setLocationDrafts] = useState<
+    Record<
+      number,
+      {
+        name: string;
+        type: string;
+        country: string;
+        xCoordinate: string;
+        yCoordinate: string;
+      }
+    >
+  >({});
 
   function toggleGroupApe(apeId: number) {
     setSelectedGroupApeIds((prev) =>
@@ -138,6 +185,39 @@ export default function ResearchPage() {
     );
   }
 
+  function openEditGroupsDialog() {
+    const drafts: Record<number, { name: string; notes: string }> = {};
+    for (const g of project?.apeGroups ?? []) {
+      drafts[g.id] = { name: g.name, notes: g.notes ?? "" };
+    }
+    setGroupDrafts(drafts);
+    setEditGroupsOpen(true);
+  }
+
+  function openEditLocationsDialog() {
+    const drafts: Record<
+      number,
+      {
+        name: string;
+        type: string;
+        country: string;
+        xCoordinate: string;
+        yCoordinate: string;
+      }
+    > = {};
+    for (const loc of project?.locations ?? []) {
+      drafts[loc.id] = {
+        name: loc.name,
+        type: loc.type,
+        country: loc.country,
+        xCoordinate: String(loc.xCoordinate),
+        yCoordinate: String(loc.yCoordinate),
+      };
+    }
+    setLocationDrafts(drafts);
+    setEditLocationsOpen(true);
+  }
+
   const sessions = Array.from(
     new Map(
       logsByResearchId
@@ -156,18 +236,81 @@ export default function ResearchPage() {
         </Link>
       </div>
       <div className="flex items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold">
-          {project?.title ?? `Research #${researchId}`}
-        </h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold">
+            {project?.title ?? `Research #${researchId}`}
+          </h1>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Edit title"
+            onClick={() => {
+              setTitleDraft(project?.title ?? "");
+              setEditTitleOpen(true);
+            }}
+          >
+            <Pencil className="size-4" />
+          </Button>
+        </div>
         <Button onClick={() => setSessionModalOpen(true)}>
           Start New Session
         </Button>
       </div>
-      <p>{project?.createdAt.toDateString()}</p>
-      <p>{project?.description}</p>
+      <div className="flex items-center gap-2">
+        <p className="text-muted-foreground text-sm">
+          {project?.startDate
+            ? `Start: ${new Date(project.startDate).toLocaleDateString()}`
+            : "No start date"}
+          {project?.endDate
+            ? ` · End: ${new Date(project.endDate).toLocaleDateString()}`
+            : ""}
+        </p>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6"
+          aria-label="Edit dates"
+          onClick={() => {
+            setStartDateDraft(
+              project?.startDate ? new Date(project.startDate) : undefined,
+            );
+            setEndDateDraft(
+              project?.endDate ? new Date(project.endDate) : undefined,
+            );
+            setEditDatesOpen(true);
+          }}
+        >
+          <Pencil className="size-3" />
+        </Button>
+      </div>
+      <div className="flex items-center gap-2">
+        <p>{project?.description}</p>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6"
+          aria-label="Edit description"
+          onClick={() => {
+            setDescDraft(project?.description ?? "");
+            setEditDescOpen(true);
+          }}
+        >
+          <Pencil className="size-3" />
+        </Button>
+      </div>
 
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold">Researchers</h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg font-bold">Researchers</h2>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Manage researchers"
+            onClick={() => setManageResearchersOpen(true)}
+          >
+            <Pencil className="size-4" />
+          </Button>
+        </div>
         <Button
           size="sm"
           className="w-36"
@@ -201,7 +344,17 @@ export default function ResearchPage() {
         </div>
       )}
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold">Ape Groups</h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg font-bold">Ape Groups</h2>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Edit ape groups"
+            onClick={openEditGroupsDialog}
+          >
+            <Pencil className="size-4" />
+          </Button>
+        </div>
         <Button size="sm" className="w-36" onClick={openAddGroup}>
           <Plus className="mr-1 size-4" />
           Add Ape Group
@@ -251,7 +404,17 @@ export default function ResearchPage() {
         </>
       )}
 
-      <h2 className="text-lg font-bold">Locations</h2>
+      <div className="flex items-center gap-2">
+        <h2 className="text-lg font-bold">Locations</h2>
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label="Edit locations"
+          onClick={openEditLocationsDialog}
+        >
+          <Pencil className="size-4" />
+        </Button>
+      </div>
 
       <Table>
         {(project?.locations ?? []).length === 0 && (
@@ -613,6 +776,516 @@ export default function ResearchPage() {
                 onClick={saveResearcher}
               >
                 {addResearcherToProject.isPending ? "Saving…" : "Add"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Title dialog */}
+      <Dialog open={editTitleOpen} onOpenChange={setEditTitleOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Edit Title</DialogTitle>
+            <DialogDescription>
+              Update the research project title.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="edit-title">Title</Label>
+              <Input
+                id="edit-title"
+                value={titleDraft}
+                onChange={(e) => setTitleDraft(e.target.value)}
+                placeholder="Research project title"
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setEditTitleOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                disabled={!titleDraft.trim() || updateResearchTitle.isPending}
+                onClick={() =>
+                  updateResearchTitle.mutate(
+                    { id: Number(researchId), title: titleDraft.trim() },
+                    {
+                      onSuccess: () => {
+                        void refetchProject();
+                        setEditTitleOpen(false);
+                        toast.success("Title updated.");
+                      },
+                      onError: () => toast.error("Failed to update title."),
+                    },
+                  )
+                }
+              >
+                {updateResearchTitle.isPending ? "Saving…" : "Save"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Dates dialog */}
+      <Dialog open={editDatesOpen} onOpenChange={setEditDatesOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Edit Dates</DialogTitle>
+            <DialogDescription>
+              Update the project start and end dates.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
+              <Label>Start Date</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full pl-3 text-left font-normal",
+                      !startDateDraft && "text-muted-foreground",
+                    )}
+                  >
+                    {startDateDraft
+                      ? format(startDateDraft, "PPP")
+                      : "Pick a date"}
+                    <CalendarIcon className="ml-auto size-4 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={startDateDraft}
+                    onSelect={setStartDateDraft}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label>End Date (optional)</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full pl-3 text-left font-normal",
+                      !endDateDraft && "text-muted-foreground",
+                    )}
+                  >
+                    {endDateDraft
+                      ? format(endDateDraft, "PPP")
+                      : "Pick a date (optional)"}
+                    <CalendarIcon className="ml-auto size-4 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={endDateDraft}
+                    onSelect={setEndDateDraft}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setEditDatesOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                disabled={!startDateDraft || updateResearchDates.isPending}
+                onClick={() =>
+                  updateResearchDates.mutate(
+                    {
+                      id: Number(researchId),
+                      startDate: startDateDraft!.toISOString(),
+                      endDate: endDateDraft?.toISOString() ?? null,
+                    },
+                    {
+                      onSuccess: () => {
+                        void refetchProject();
+                        setEditDatesOpen(false);
+                        toast.success("Dates updated.");
+                      },
+                      onError: () => toast.error("Failed to update dates."),
+                    },
+                  )
+                }
+              >
+                {updateResearchDates.isPending ? "Saving…" : "Save"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Description dialog */}
+      <Dialog open={editDescOpen} onOpenChange={setEditDescOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Edit Description</DialogTitle>
+            <DialogDescription>
+              Update the project description.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="edit-description">Description</Label>
+              <Input
+                id="edit-description"
+                value={descDraft}
+                onChange={(e) => setDescDraft(e.target.value)}
+                placeholder="Brief description (optional)"
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setEditDescOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                disabled={updateResearchDescription.isPending}
+                onClick={() =>
+                  updateResearchDescription.mutate(
+                    { id: Number(researchId), description: descDraft },
+                    {
+                      onSuccess: () => {
+                        void refetchProject();
+                        setEditDescOpen(false);
+                        toast.success("Description updated.");
+                      },
+                      onError: () =>
+                        toast.error("Failed to update description."),
+                    },
+                  )
+                }
+              >
+                {updateResearchDescription.isPending ? "Saving…" : "Save"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Manage Researchers dialog */}
+      <Dialog
+        open={manageResearchersOpen}
+        onOpenChange={setManageResearchersOpen}
+      >
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Manage Researchers</DialogTitle>
+            <DialogDescription>
+              Remove researchers from this project.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-3">
+            {projectResearchers.length === 0 ? (
+              <p className="text-muted-foreground text-sm">
+                No researchers linked.
+              </p>
+            ) : (
+              projectResearchers.map((r) => (
+                <div
+                  key={r.id}
+                  className="flex items-center justify-between gap-2"
+                >
+                  <span className="text-sm">
+                    {r.firstName} {r.lastName}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-red-500 hover:text-red-600"
+                    disabled={removeResearcherFromProject.isPending}
+                    onClick={() =>
+                      removeResearcherFromProject.mutate(
+                        {
+                          researchProjectId: Number(researchId),
+                          researcherId: r.id,
+                        },
+                        {
+                          onSuccess: () => {
+                            void refetchProject();
+                            toast.success(
+                              `${r.firstName} ${r.lastName} removed.`,
+                            );
+                          },
+                          onError: () =>
+                            toast.error("Failed to remove researcher."),
+                        },
+                      )
+                    }
+                  >
+                    Remove
+                  </Button>
+                </div>
+              ))
+            )}
+            <div className="flex justify-end pt-2">
+              <Button
+                variant="outline"
+                onClick={() => setManageResearchersOpen(false)}
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Ape Groups dialog */}
+      <Dialog open={editGroupsOpen} onOpenChange={setEditGroupsOpen}>
+        <DialogContent className="max-h-[80vh] overflow-y-auto sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Ape Groups</DialogTitle>
+            <DialogDescription>
+              Update the name and notes of each ape group.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-4">
+            {(project?.apeGroups ?? []).length === 0 ? (
+              <p className="text-muted-foreground text-sm">
+                No ape groups linked.
+              </p>
+            ) : (
+              (project?.apeGroups ?? []).map((group) => {
+                const draft = groupDrafts[group.id] ?? {
+                  name: group.name,
+                  notes: group.notes ?? "",
+                };
+                return (
+                  <div
+                    key={group.id}
+                    className="flex flex-col gap-2 rounded-md border p-3"
+                  >
+                    <div className="flex flex-col gap-1">
+                      <Label htmlFor={`group-name-${group.id}`}>Name</Label>
+                      <Input
+                        id={`group-name-${group.id}`}
+                        value={draft.name}
+                        onChange={(e) =>
+                          setGroupDrafts((prev) => ({
+                            ...prev,
+                            [group.id]: { ...draft, name: e.target.value },
+                          }))
+                        }
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <Label htmlFor={`group-notes-${group.id}`}>Notes</Label>
+                      <Input
+                        id={`group-notes-${group.id}`}
+                        value={draft.notes}
+                        onChange={(e) =>
+                          setGroupDrafts((prev) => ({
+                            ...prev,
+                            [group.id]: { ...draft, notes: e.target.value },
+                          }))
+                        }
+                        placeholder="Optional notes"
+                      />
+                    </div>
+                    <div className="flex justify-end">
+                      <Button
+                        size="sm"
+                        disabled={
+                          !draft.name.trim() || updateApeGroup.isPending
+                        }
+                        onClick={() =>
+                          updateApeGroup.mutate(
+                            {
+                              id: group.id,
+                              name: draft.name.trim(),
+                              notes: draft.notes || undefined,
+                            },
+                            {
+                              onSuccess: () => {
+                                void refetchProject();
+                                toast.success(`"${draft.name}" updated.`);
+                              },
+                              onError: () =>
+                                toast.error("Failed to update group."),
+                            },
+                          )
+                        }
+                      >
+                        Save
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+            <div className="flex justify-end">
+              <Button
+                variant="outline"
+                onClick={() => setEditGroupsOpen(false)}
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Locations dialog */}
+      <Dialog open={editLocationsOpen} onOpenChange={setEditLocationsOpen}>
+        <DialogContent className="max-h-[80vh] overflow-y-auto sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Locations</DialogTitle>
+            <DialogDescription>
+              Update the details of each location.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-4">
+            {(project?.locations ?? []).length === 0 ? (
+              <p className="text-muted-foreground text-sm">
+                No locations linked.
+              </p>
+            ) : (
+              (project?.locations ?? []).map((loc) => {
+                const draft = locationDrafts[loc.id] ?? {
+                  name: loc.name,
+                  type: loc.type,
+                  country: loc.country,
+                  xCoordinate: String(loc.xCoordinate),
+                  yCoordinate: String(loc.yCoordinate),
+                };
+                return (
+                  <div
+                    key={loc.id}
+                    className="flex flex-col gap-2 rounded-md border p-3"
+                  >
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="flex flex-col gap-1">
+                        <Label htmlFor={`loc-name-${loc.id}`}>Name</Label>
+                        <Input
+                          id={`loc-name-${loc.id}`}
+                          value={draft.name}
+                          onChange={(e) =>
+                            setLocationDrafts((prev) => ({
+                              ...prev,
+                              [loc.id]: { ...draft, name: e.target.value },
+                            }))
+                          }
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <Label htmlFor={`loc-type-${loc.id}`}>Type</Label>
+                        <Input
+                          id={`loc-type-${loc.id}`}
+                          value={draft.type}
+                          onChange={(e) =>
+                            setLocationDrafts((prev) => ({
+                              ...prev,
+                              [loc.id]: { ...draft, type: e.target.value },
+                            }))
+                          }
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <Label htmlFor={`loc-country-${loc.id}`}>Country</Label>
+                        <Input
+                          id={`loc-country-${loc.id}`}
+                          value={draft.country}
+                          onChange={(e) =>
+                            setLocationDrafts((prev) => ({
+                              ...prev,
+                              [loc.id]: { ...draft, country: e.target.value },
+                            }))
+                          }
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <Label htmlFor={`loc-x-${loc.id}`}>Lat (X)</Label>
+                        <Input
+                          id={`loc-x-${loc.id}`}
+                          type="number"
+                          value={draft.xCoordinate}
+                          onChange={(e) =>
+                            setLocationDrafts((prev) => ({
+                              ...prev,
+                              [loc.id]: {
+                                ...draft,
+                                xCoordinate: e.target.value,
+                              },
+                            }))
+                          }
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <Label htmlFor={`loc-y-${loc.id}`}>Lng (Y)</Label>
+                        <Input
+                          id={`loc-y-${loc.id}`}
+                          type="number"
+                          value={draft.yCoordinate}
+                          onChange={(e) =>
+                            setLocationDrafts((prev) => ({
+                              ...prev,
+                              [loc.id]: {
+                                ...draft,
+                                yCoordinate: e.target.value,
+                              },
+                            }))
+                          }
+                        />
+                      </div>
+                    </div>
+                    <div className="flex justify-end">
+                      <Button
+                        size="sm"
+                        disabled={
+                          !draft.name.trim() || updateLocation.isPending
+                        }
+                        onClick={() =>
+                          updateLocation.mutate(
+                            {
+                              id: loc.id,
+                              name: draft.name.trim(),
+                              type: draft.type.trim(),
+                              country: draft.country.trim(),
+                              xCoordinate:
+                                parseFloat(draft.xCoordinate) || 0,
+                              yCoordinate:
+                                parseFloat(draft.yCoordinate) || 0,
+                            },
+                            {
+                              onSuccess: () => {
+                                void refetchProject();
+                                toast.success("Location updated.");
+                              },
+                              onError: () =>
+                                toast.error("Failed to update location."),
+                            },
+                          )
+                        }
+                      >
+                        Save
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+            <div className="flex justify-end">
+              <Button
+                variant="outline"
+                onClick={() => setEditLocationsOpen(false)}
+              >
+                Close
               </Button>
             </div>
           </div>

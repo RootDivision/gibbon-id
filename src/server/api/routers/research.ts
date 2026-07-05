@@ -174,4 +174,64 @@ export const researchRouter = createTRPCRouter({
         });
       }
     }),
+
+  updateResearchTitle: publicProcedure
+    .input(z.object({ id: z.number(), title: z.string().min(1) }))
+    .mutation(async ({ ctx, input }) => {
+      return ctx.db.researchProject.update({
+        where: { id: input.id },
+        data: { title: input.title },
+      });
+    }),
+
+  updateResearchDates: publicProcedure
+    .input(
+      z.object({
+        id: z.number(),
+        startDate: z.string(),
+        endDate: z.string().nullable().optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      return ctx.db.researchProject.update({
+        where: { id: input.id },
+        data: {
+          startDate: new Date(input.startDate),
+          endDate: input.endDate ? new Date(input.endDate) : null,
+        },
+      });
+    }),
+
+  updateResearchDescription: publicProcedure
+    .input(z.object({ id: z.number(), description: z.string().optional() }))
+    .mutation(async ({ ctx, input }) => {
+      return ctx.db.researchProject.update({
+        where: { id: input.id },
+        data: { description: input.description ?? "" },
+      });
+    }),
+
+  updateLocation: publicProcedure
+    .input(
+      z.object({
+        id: z.number(),
+        name: z.string().min(1),
+        type: z.string().min(1),
+        country: z.string(),
+        xCoordinate: z.number(),
+        yCoordinate: z.number(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      return ctx.db.location.update({
+        where: { id: input.id },
+        data: {
+          name: input.name,
+          type: input.type,
+          country: input.country,
+          xCoordinate: input.xCoordinate,
+          yCoordinate: input.yCoordinate,
+        },
+      });
+    }),
 });

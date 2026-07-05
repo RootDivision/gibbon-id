@@ -87,4 +87,19 @@ export const apeGroupRouter = createTRPCRouter({
         include: { apes: { include: { species: true } } },
       });
     }),
+
+  updateApeGroup: publicProcedure
+    .input(
+      z.object({
+        id: z.number(),
+        name: z.string().min(1),
+        notes: z.string().optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      return ctx.db.apeGroup.update({
+        where: { id: input.id },
+        data: { name: input.name, notes: input.notes ?? null },
+      });
+    }),
 });
