@@ -86,6 +86,8 @@ export default function ResearchPage() {
     api.research.addResearcherToProject.useMutation();
   const removeResearcherFromProject =
     api.research.removeResearcherFromProject.useMutation();
+  const createResearcher = api.researcher.addResearcher.useMutation();
+  const createApe = api.ape.addApe.useMutation();
   const updateResearchTitle = api.research.updateResearchTitle.useMutation();
   const updateResearchDates = api.research.updateResearchDates.useMutation();
   const updateResearchDescription =
@@ -93,11 +95,25 @@ export default function ResearchPage() {
   const updateApeGroup = api.apeGroup.updateApeGroup.useMutation();
   const updateLocation = api.research.updateLocation.useMutation();
 
-  const { data: allResearchers = [] } =
+  const { data: allResearchers = [], refetch: refetchResearchers } =
     api.researcher.getResearchers.useQuery();
 
   const [addResearcherOpen, setAddResearcherOpen] = useState(false);
   const [selectedResearcherId, setSelectedResearcherId] = useState("");
+  const [researcherMode, setResearcherMode] = useState<"existing" | "new">(
+    "existing",
+  );
+  const [newResearcherFirstName, setNewResearcherFirstName] = useState("");
+  const [newResearcherLastName, setNewResearcherLastName] = useState("");
+  const [newResearcherEmail, setNewResearcherEmail] = useState("");
+
+  function resetResearcherModal() {
+    setSelectedResearcherId("");
+    setResearcherMode("existing");
+    setNewResearcherFirstName("");
+    setNewResearcherLastName("");
+    setNewResearcherEmail("");
+  }
 
   function saveResearcher() {
     if (!selectedResearcherId) return;
@@ -110,16 +126,45 @@ export default function ResearchPage() {
         onSuccess: () => {
           void refetchProject();
           setAddResearcherOpen(false);
-          setSelectedResearcherId("");
+          resetResearcherModal();
         },
       },
     );
+  }
+
+  async function saveNewResearcher() {
+    if (
+      !newResearcherFirstName.trim() ||
+      !newResearcherLastName.trim() ||
+      !newResearcherEmail.trim()
+    )
+      return;
+    try {
+      const newR = await createResearcher.mutateAsync({
+        firstName: newResearcherFirstName.trim(),
+        lastName: newResearcherLastName.trim(),
+        email: newResearcherEmail.trim(),
+      });
+      await addResearcherToProject.mutateAsync({
+        researchProjectId: Number(researchId),
+        researcherId: newR.id,
+      });
+      void refetchProject();
+      void refetchResearchers();
+      setAddResearcherOpen(false);
+      resetResearcherModal();
+      toast.success("Researcher created and added.");
+    } catch {
+      toast.error("Failed to create researcher.");
+    }
   }
 
   const [addGroupOpen, setAddGroupOpen] = useState(false);
   const [groupName, setGroupName] = useState("");
   const [groupNotes, setGroupNotes] = useState("");
   const [selectedGroupApeIds, setSelectedGroupApeIds] = useState<number[]>([]);
+  const [newApes, setNewApes] = useState<string[]>([]);
+  const [newApeName, setNewApeName] = useState("");
 
   const [editTitleOpen, setEditTitleOpen] = useState(false);
   const [titleDraft, setTitleDraft] = useState("");
@@ -164,25 +209,37 @@ export default function ResearchPage() {
     setGroupName("");
     setGroupNotes("");
     setSelectedGroupApeIds([]);
+    setNewApes([]);
+    setNewApeName("");
     setAddGroupOpen(true);
   }
 
-  function saveApeGroup() {
+  async function saveApeGroup() {
     if (!groupName.trim()) return;
-    addApeGroupToProject.mutate(
-      {
-        name: groupName.trim(),
-        notes: groupNotes.trim() || undefined,
-        apeIds: selectedGroupApeIds,
-        researchProjectId: Number(researchId),
-      },
-      {
-        onSuccess: () => {
-          void refetchProject();
-          setAddGroupOpen(false);
+    try {
+      const newApeIds: number[] = [];
+      for (const apeName of newApes) {
+        const created = await createApe.mutateAsync({ name: apeName });
+        newApeIds.push(created.id);
+      }
+      addApeGroupToProject.mutate(
+        {
+          name: groupName.trim(),
+          notes: groupNotes.trim() || undefined,
+          apeIds: [...selectedGroupApeIds, ...newApeIds],
+          researchProjectId: Number(researchId),
         },
-      },
-    );
+        {
+          onSuccess: () => {
+            void refetchProject();
+            setAddGroupOpen(false);
+          },
+          onError: () => toast.error("Failed to save ape group."),
+        },
+      );
+    } catch {
+      toast.error("Failed to create apes.");
+    }
   }
 
   function openEditGroupsDialog() {
@@ -346,66 +403,70 @@ export default function ResearchPage() {
           </CardHeader>
         </Card>
       </div>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <h2 className="text-lg font-bold">Ape Groups</h2>
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="Edit ape groups"
-            onClick={openEditGroupsDialog}
-          >
-            <Pencil className="size-4" />
-          </Button>
-        </div>
-        <Button size="sm" className="w-36" onClick={openAddGroup}>
-          <Plus className="mr-1 size-4" />
-          Add Ape Group
+      <div className="flex items-center gap-2">
+        <h2 className="text-lg font-bold">Ape Groups</h2>
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label="Edit ape groups"
+          onClick={openEditGroupsDialog}
+        >
+          <Pencil className="size-4" />
         </Button>
       </div>
+      <div className="grid grid-cols-2 gap-4">
+        {project?.apeGroups.map((group) => (
+          <Card key={group.id}>
+            <CardHeader>
+              <CardTitle>{group.name}</CardTitle>
+              {group.notes && <p>{group.notes}</p>}
+            </CardHeader>
+            <CardContent className="grid grid-cols-2 gap-4">
+              {group.apes.length === 0 ? (
+                <p className="text-muted-foreground text-sm">
+                  No apes in this group
+                </p>
+              ) : (
+                group.apes.map((ape) => (
+                  <Card key={ape.id}>
+                    <CardHeader className="flex flex-row items-center gap-4">
+                      <Avatar className="h-8 w-8">
+                        <AvatarFallback className="text-xs">
+                          {ape.name[0]}
+                        </AvatarFallback>
+                      </Avatar>
 
-      {(project?.apeGroups ?? []).length > 0 && (
-        <>
-          <div className="grid grid-cols-2 gap-4">
-            {project?.apeGroups.map((group) => (
-              <Card key={group.id}>
-                <CardHeader>
-                  <CardTitle>{group.name}</CardTitle>
-                  {group.notes && <p>{group.notes}</p>}
-                </CardHeader>
-                <CardContent className="grid grid-cols-2 gap-4">
-                  {group.apes.length === 0 ? (
-                    <p className="text-muted-foreground text-sm">
-                      No apes in this group
-                    </p>
-                  ) : (
-                    group.apes.map((ape) => (
-                      <Card key={ape.id}>
-                        <CardHeader className="flex flex-row items-center gap-4">
-                          <Avatar className="h-8 w-8">
-                            <AvatarFallback className="text-xs">
-                              {ape.name[0]}
-                            </AvatarFallback>
-                          </Avatar>
-
-                          <CardTitle>{ape.name}</CardTitle>
-                        </CardHeader>
-                        {ape.species && (
-                          <CardContent>
-                            <span className="text-muted-foreground text-sm">
-                              {formatSpeciesName(ape.species.name)}
-                            </span>
-                          </CardContent>
-                        )}
-                      </Card>
-                    ))
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </>
-      )}
+                      <CardTitle>{ape.name}</CardTitle>
+                    </CardHeader>
+                    {ape.species && (
+                      <CardContent>
+                        <span className="text-muted-foreground text-sm">
+                          {formatSpeciesName(ape.species.name)}
+                        </span>
+                      </CardContent>
+                    )}
+                  </Card>
+                ))
+              )}
+            </CardContent>
+          </Card>
+        ))}
+        <Card
+          className="cursor-pointer border-dashed"
+          onClick={openAddGroup}
+        >
+          <CardHeader className="flex flex-row items-center gap-4">
+            <Avatar>
+              <AvatarFallback>
+                <Plus className="size-4" />
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex flex-col gap-1">
+              <CardTitle className="text-base">Add New Ape Group</CardTitle>
+            </div>
+          </CardHeader>
+        </Card>
+      </div>
 
       <div className="flex items-center gap-2">
         <h2 className="text-lg font-bold">Locations</h2>
@@ -641,6 +702,8 @@ export default function ResearchPage() {
             setGroupName("");
             setGroupNotes("");
             setSelectedGroupApeIds([]);
+            setNewApes([]);
+            setNewApeName("");
           }
           setAddGroupOpen(open);
         }}
@@ -712,15 +775,71 @@ export default function ResearchPage() {
               )}
             </div>
 
+            <div className="flex flex-col gap-2">
+              <Label className="text-sm font-medium">Create new apes</Label>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="New ape name…"
+                  value={newApeName}
+                  onChange={(e) => setNewApeName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && newApeName.trim()) {
+                      setNewApes((prev) => [...prev, newApeName.trim()]);
+                      setNewApeName("");
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={!newApeName.trim()}
+                  onClick={() => {
+                    setNewApes((prev) => [...prev, newApeName.trim()]);
+                    setNewApeName("");
+                  }}
+                >
+                  Add
+                </Button>
+              </div>
+              {newApes.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {newApes.map((name, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center gap-1 rounded-md border px-2 py-1 text-sm"
+                    >
+                      {name}
+                      <button
+                        type="button"
+                        className="text-muted-foreground hover:text-destructive ml-1"
+                        onClick={() =>
+                          setNewApes((prev) => prev.filter((_, j) => j !== i))
+                        }
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" onClick={() => setAddGroupOpen(false)}>
                 Cancel
               </Button>
               <Button
-                disabled={!groupName.trim() || addApeGroupToProject.isPending}
+                disabled={
+                  !groupName.trim() ||
+                  addApeGroupToProject.isPending ||
+                  createApe.isPending
+                }
                 onClick={saveApeGroup}
               >
-                {addApeGroupToProject.isPending ? "Saving…" : "Save"}
+                {addApeGroupToProject.isPending || createApe.isPending
+                  ? "Saving…"
+                  : "Save"}
               </Button>
             </div>
           </div>
@@ -731,7 +850,7 @@ export default function ResearchPage() {
       <Dialog
         open={addResearcherOpen}
         onOpenChange={(open) => {
-          if (!open) setSelectedResearcherId("");
+          if (!open) resetResearcherModal();
           setAddResearcherOpen(open);
         }}
       >
@@ -739,48 +858,126 @@ export default function ResearchPage() {
           <DialogHeader>
             <DialogTitle>Add Researcher</DialogTitle>
             <DialogDescription>
-              Link an existing researcher to this project.
+              Link an existing researcher or create a new one.
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="researcher-select">Researcher</Label>
-              <Select
-                value={selectedResearcherId}
-                onValueChange={setSelectedResearcherId}
-              >
-                <SelectTrigger id="researcher-select" className="w-full">
-                  <SelectValue placeholder="Select a researcher…" />
-                </SelectTrigger>
-                <SelectContent>
-                  {allResearchers
-                    .filter(
-                      (r) => !projectResearchers.some((pr) => pr.id === r.id),
-                    )
-                    .map((r) => (
-                      <SelectItem key={r.id} value={String(r.id)}>
-                        {r.firstName} {r.lastName}
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex justify-end gap-2 pt-2">
+            <div className="flex rounded-md border">
               <Button
-                variant="outline"
-                onClick={() => setAddResearcherOpen(false)}
+                type="button"
+                variant={researcherMode === "existing" ? "secondary" : "ghost"}
+                className="flex-1 rounded-r-none"
+                onClick={() => setResearcherMode("existing")}
               >
-                Cancel
+                Existing
               </Button>
               <Button
-                disabled={
-                  !selectedResearcherId || addResearcherToProject.isPending
-                }
-                onClick={saveResearcher}
+                type="button"
+                variant={researcherMode === "new" ? "secondary" : "ghost"}
+                className="flex-1 rounded-l-none"
+                onClick={() => setResearcherMode("new")}
               >
-                {addResearcherToProject.isPending ? "Saving…" : "Add"}
+                Create new
               </Button>
             </div>
+
+            {researcherMode === "existing" ? (
+              <>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="researcher-select">Researcher</Label>
+                  <Select
+                    value={selectedResearcherId}
+                    onValueChange={setSelectedResearcherId}
+                  >
+                    <SelectTrigger id="researcher-select" className="w-full">
+                      <SelectValue placeholder="Select a researcher…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {allResearchers
+                        .filter(
+                          (r) =>
+                            !projectResearchers.some((pr) => pr.id === r.id),
+                        )
+                        .map((r) => (
+                          <SelectItem key={r.id} value={String(r.id)}>
+                            {r.firstName} {r.lastName}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setAddResearcherOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    disabled={
+                      !selectedResearcherId || addResearcherToProject.isPending
+                    }
+                    onClick={saveResearcher}
+                  >
+                    {addResearcherToProject.isPending ? "Saving…" : "Add"}
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="new-researcher-first">First Name</Label>
+                  <Input
+                    id="new-researcher-first"
+                    value={newResearcherFirstName}
+                    onChange={(e) => setNewResearcherFirstName(e.target.value)}
+                    placeholder="e.g. Jane"
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="new-researcher-last">Last Name</Label>
+                  <Input
+                    id="new-researcher-last"
+                    value={newResearcherLastName}
+                    onChange={(e) => setNewResearcherLastName(e.target.value)}
+                    placeholder="e.g. Smith"
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="new-researcher-email">Email</Label>
+                  <Input
+                    id="new-researcher-email"
+                    type="email"
+                    value={newResearcherEmail}
+                    onChange={(e) => setNewResearcherEmail(e.target.value)}
+                    placeholder="e.g. jane.smith@example.com"
+                  />
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setAddResearcherOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    disabled={
+                      !newResearcherFirstName.trim() ||
+                      !newResearcherLastName.trim() ||
+                      !newResearcherEmail.trim() ||
+                      createResearcher.isPending ||
+                      addResearcherToProject.isPending
+                    }
+                    onClick={saveNewResearcher}
+                  >
+                    {createResearcher.isPending ||
+                    addResearcherToProject.isPending
+                      ? "Creating…"
+                      : "Create & Add"}
+                  </Button>
+                </div>
+              </>
+            )}
           </div>
         </DialogContent>
       </Dialog>
