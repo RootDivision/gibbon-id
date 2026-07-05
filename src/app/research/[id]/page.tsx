@@ -90,12 +90,15 @@ export default function ResearchPage() {
     api.research.removeResearcherFromProject.useMutation();
   const createResearcher = api.researcher.addResearcher.useMutation();
   const createApe = api.ape.addApe.useMutation();
+  const updateApe = api.ape.updateApe.useMutation();
   const updateResearchTitle = api.research.updateResearchTitle.useMutation();
   const updateResearchDates = api.research.updateResearchDates.useMutation();
   const updateResearchDescription =
     api.research.updateResearchDescription.useMutation();
   const updateApeGroup = api.apeGroup.updateApeGroup.useMutation();
   const deleteApeGroup = api.apeGroup.deleteApeGroup.useMutation();
+  const addApeToGroup = api.apeGroup.addApeToGroup.useMutation();
+  const removeApeFromGroup = api.apeGroup.removeApeFromGroup.useMutation();
   const updateResearcherMutation = api.researcher.updateResearcher.useMutation();
   const updateLocation = api.research.updateLocation.useMutation();
   const deleteLocation = api.research.deleteLocation.useMutation();
@@ -203,6 +206,26 @@ export default function ResearchPage() {
   const [groupDrafts, setGroupDrafts] = useState<
     Record<number, { name: string; notes: string }>
   >({});
+
+  const [editGroupMembersOpen, setEditGroupMembersOpen] = useState(false);
+  const [editingGroupId, setEditingGroupId] = useState<number | null>(null);
+  const [addApeToGroupSelect, setAddApeToGroupSelect] = useState("");
+
+  const [editApeOpen, setEditApeOpen] = useState(false);
+  const [editingApe, setEditingApe] = useState<{
+    id: number;
+    name: string;
+    speciesId: number | null;
+    sex: string | null;
+    ageClass: string | null;
+    species?: { id: number; name: string } | null;
+  } | null>(null);
+  const [apeDraft, setApeDraft] = useState({
+    name: "",
+    speciesId: "",
+    sex: "",
+    ageClass: "",
+  });
 
   const [editLocationsOpen, setEditLocationsOpen] = useState(false);
   const [locationDrafts, setLocationDrafts] = useState<
@@ -448,7 +471,21 @@ export default function ResearchPage() {
         {project?.apeGroups.map((group) => (
           <Card key={group.id}>
             <CardHeader>
-              <CardTitle>{group.name}</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle>{group.name}</CardTitle>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label={`Edit members of ${group.name}`}
+                  onClick={() => {
+                    setEditingGroupId(group.id);
+                    setAddApeToGroupSelect("");
+                    setEditGroupMembersOpen(true);
+                  }}
+                >
+                  <Pencil className="size-4" />
+                </Button>
+              </div>
               {group.notes && <p>{group.notes}</p>}
             </CardHeader>
             <CardContent className="grid grid-cols-2 gap-4">
@@ -458,7 +495,20 @@ export default function ResearchPage() {
                 </p>
               ) : (
                 group.apes.map((ape) => (
-                  <Card key={ape.id}>
+                  <Card
+                    key={ape.id}
+                    className="hover:bg-muted/50 cursor-pointer transition-colors"
+                    onClick={() => {
+                      setEditingApe(ape);
+                      setApeDraft({
+                        name: ape.name,
+                        speciesId: ape.speciesId ? String(ape.speciesId) : "",
+                        sex: ape.sex ?? "",
+                        ageClass: ape.ageClass ?? "",
+                      });
+                      setEditApeOpen(true);
+                    }}
+                  >
                     <CardHeader className="flex flex-row items-center gap-4">
                       <Avatar className="h-8 w-8">
                         <AvatarFallback className="text-xs">
@@ -1481,6 +1531,292 @@ export default function ResearchPage() {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Ape dialog */}
+      <Dialog
+        open={editApeOpen}
+        onOpenChange={(open) => {
+          if (!open) setEditingApe(null);
+          setEditApeOpen(open);
+        }}
+      >
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Edit Ape</DialogTitle>
+            <DialogDescription>
+              Update the details for {editingApe?.name}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="ape-name">Name</Label>
+              <Input
+                id="ape-name"
+                value={apeDraft.name}
+                onChange={(e) =>
+                  setApeDraft((prev) => ({ ...prev, name: e.target.value }))
+                }
+                placeholder="Ape name"
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="ape-species">Species</Label>
+              <Select
+                value={apeDraft.speciesId}
+                onValueChange={(v) =>
+                  setApeDraft((prev) => ({ ...prev, speciesId: v }))
+                }
+              >
+                <SelectTrigger id="ape-species" className="w-full">
+                  <SelectValue placeholder="Select species (optional)…" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">—</SelectItem>
+                  {allSpecies.map((s) => (
+                    <SelectItem key={s.id} value={String(s.id)}>
+                      {formatSpeciesName(s.name)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="ape-sex">Sex</Label>
+                <Select
+                  value={apeDraft.sex}
+                  onValueChange={(v) =>
+                    setApeDraft((prev) => ({ ...prev, sex: v }))
+                  }
+                >
+                  <SelectTrigger id="ape-sex" className="w-full">
+                    <SelectValue placeholder="Optional…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">—</SelectItem>
+                    <SelectItem value="Male">Male</SelectItem>
+                    <SelectItem value="Female">Female</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="ape-age">Age Class</Label>
+                <Select
+                  value={apeDraft.ageClass}
+                  onValueChange={(v) =>
+                    setApeDraft((prev) => ({ ...prev, ageClass: v }))
+                  }
+                >
+                  <SelectTrigger id="ape-age" className="w-full">
+                    <SelectValue placeholder="Optional…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">—</SelectItem>
+                    <SelectItem value="Infant">Infant</SelectItem>
+                    <SelectItem value="Juvenile">Juvenile</SelectItem>
+                    <SelectItem value="Subadult">Subadult</SelectItem>
+                    <SelectItem value="Adult">Adult</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setEditApeOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                disabled={!apeDraft.name.trim() || updateApe.isPending}
+                onClick={() => {
+                  if (!editingApe) return;
+                  updateApe.mutate(
+                    {
+                      id: editingApe.id,
+                      name: apeDraft.name.trim(),
+                      speciesId:
+                        apeDraft.speciesId && apeDraft.speciesId !== "none"
+                          ? Number(apeDraft.speciesId)
+                          : null,
+                      sex:
+                        apeDraft.sex && apeDraft.sex !== "none"
+                          ? (apeDraft.sex as "Male" | "Female")
+                          : null,
+                      ageClass:
+                        apeDraft.ageClass && apeDraft.ageClass !== "none"
+                          ? (apeDraft.ageClass as
+                              | "Infant"
+                              | "Juvenile"
+                              | "Subadult"
+                              | "Adult")
+                          : null,
+                    },
+                    {
+                      onSuccess: () => {
+                        void refetchProject();
+                        setEditApeOpen(false);
+                        toast.success(`${apeDraft.name} updated.`);
+                      },
+                      onError: () => toast.error("Failed to update ape."),
+                    },
+                  );
+                }}
+              >
+                {updateApe.isPending ? "Saving…" : "Save"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Group Members dialog */}
+      <Dialog
+        open={editGroupMembersOpen}
+        onOpenChange={(open) => {
+          if (!open) setAddApeToGroupSelect("");
+          setEditGroupMembersOpen(open);
+        }}
+      >
+        <DialogContent className="max-h-[80vh] overflow-y-auto sm:max-w-md">
+          {(() => {
+            const editingGroup = project?.apeGroups.find(
+              (g) => g.id === editingGroupId,
+            );
+            const apesNotInGroup = allApes.filter(
+              (a) => a.groupId !== editingGroupId,
+            );
+            return (
+              <>
+                <DialogHeader>
+                  <DialogTitle>
+                    Edit Members — {editingGroup?.name}
+                  </DialogTitle>
+                  <DialogDescription>
+                    Add or remove apes from this group.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="flex flex-col gap-4">
+                  <div className="flex flex-col gap-2">
+                    <Label className="text-sm font-medium">
+                      Current Members
+                    </Label>
+                    {(editingGroup?.apes ?? []).length === 0 ? (
+                      <p className="text-muted-foreground text-sm">
+                        No apes in this group yet.
+                      </p>
+                    ) : (
+                      <div className="flex flex-col gap-2">
+                        {editingGroup?.apes.map((ape) => (
+                          <div
+                            key={ape.id}
+                            className="flex items-center justify-between rounded-md border px-3 py-2"
+                          >
+                            <div className="flex flex-col">
+                              <span className="text-sm font-medium">
+                                {ape.name}
+                              </span>
+                              {ape.species && (
+                                <span className="text-muted-foreground text-xs">
+                                  {formatSpeciesName(ape.species.name)}
+                                </span>
+                              )}
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-red-500 hover:text-red-600"
+                              disabled={removeApeFromGroup.isPending}
+                              onClick={() =>
+                                removeApeFromGroup.mutate(
+                                  { apeId: ape.id },
+                                  {
+                                    onSuccess: () => {
+                                      void refetchProject();
+                                      toast.success(
+                                        `${ape.name} removed from group.`,
+                                      );
+                                    },
+                                    onError: () =>
+                                      toast.error("Failed to remove ape."),
+                                  },
+                                )
+                              }
+                            >
+                              Remove
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <Label className="text-sm font-medium">Add Ape</Label>
+                    <div className="flex gap-2">
+                      <Select
+                        value={addApeToGroupSelect}
+                        onValueChange={setAddApeToGroupSelect}
+                      >
+                        <SelectTrigger className="flex-1">
+                          <SelectValue placeholder="Select an ape…" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {apesNotInGroup.map((ape) => (
+                            <SelectItem key={ape.id} value={String(ape.id)}>
+                              {ape.name}
+                              {ape.group && (
+                                <span className="text-muted-foreground ml-1 text-xs">
+                                  (from {ape.group.name})
+                                </span>
+                              )}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        size="sm"
+                        disabled={
+                          !addApeToGroupSelect || addApeToGroup.isPending
+                        }
+                        onClick={() => {
+                          if (!editingGroupId || !addApeToGroupSelect) return;
+                          addApeToGroup.mutate(
+                            {
+                              apeId: Number(addApeToGroupSelect),
+                              groupId: editingGroupId,
+                            },
+                            {
+                              onSuccess: () => {
+                                void refetchProject();
+                                setAddApeToGroupSelect("");
+                                toast.success("Ape added to group.");
+                              },
+                              onError: () =>
+                                toast.error("Failed to add ape."),
+                            },
+                          );
+                        }}
+                      >
+                        Add
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end">
+                    <Button
+                      variant="outline"
+                      onClick={() => setEditGroupMembersOpen(false)}
+                    >
+                      Close
+                    </Button>
+                  </div>
+                </div>
+              </>
+            );
+          })()}
         </DialogContent>
       </Dialog>
 

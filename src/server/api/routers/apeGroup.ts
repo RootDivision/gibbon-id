@@ -108,4 +108,22 @@ export const apeGroupRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       return ctx.db.apeGroup.delete({ where: { id: input.id } });
     }),
+
+  addApeToGroup: publicProcedure
+    .input(z.object({ apeId: z.number(), groupId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      return ctx.db.ape.update({
+        where: { id: input.apeId },
+        data: { groupId: input.groupId },
+      });
+    }),
+
+  removeApeFromGroup: publicProcedure
+    .input(z.object({ apeId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      return ctx.db.ape.update({
+        where: { id: input.apeId },
+        data: { groupId: null },
+      });
+    }),
 });
