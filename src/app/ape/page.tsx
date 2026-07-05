@@ -50,6 +50,7 @@ import {
 } from "~/components/ui/table";
 import Link from "next/link";
 import { api, type RouterOutputs } from "~/trpc/react";
+import { formatSpeciesName } from "~/lib/utils";
 
 const SEX_OPTIONS = ["Male", "Female"] as const;
 const AGE_CLASS_OPTIONS = ["Infant", "Juvenile", "Subadult", "Adult"] as const;
@@ -654,7 +655,7 @@ export default function ApePage() {
                     {ape.name}
                   </Link>
                 </TableCell>
-                <TableCell>{ape.species?.name ?? "—"}</TableCell>
+                <TableCell>{ape.species?.name ? formatSpeciesName(ape.species.name) : "—"}</TableCell>
                 <TableCell>{ape.group?.name ?? "—"}</TableCell>
                 <TableCell>{ape.sex ?? "—"}</TableCell>
                 <TableCell>{ape.ageClass ?? "—"}</TableCell>

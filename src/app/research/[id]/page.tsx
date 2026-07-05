@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from "~/components/ui/select";
 import { Label } from "~/components/ui/label";
+import { formatSpeciesName } from "~/lib/utils";
 import { Input } from "~/components/ui/input";
 import {
   Table,
@@ -236,7 +237,7 @@ export default function ResearchPage() {
                         {ape.species && (
                           <CardContent>
                             <span className="text-muted-foreground text-sm">
-                              {ape.species.name}
+                              {formatSpeciesName(ape.species.name)}
                             </span>
                           </CardContent>
                         )}
@@ -400,7 +401,7 @@ export default function ResearchPage() {
                               </span>
                               {ape.species && (
                                 <span className="text-muted-foreground text-xs">
-                                  {ape.species.name}
+                                  {formatSpeciesName(ape.species.name)}
                                 </span>
                               )}
                             </div>
@@ -529,7 +530,7 @@ export default function ResearchPage() {
                         {ape.name}
                         {ape.species && (
                           <span className="text-muted-foreground ml-1 text-xs">
-                            ({ape.species.name})
+                            ({formatSpeciesName(ape.species.name)})
                           </span>
                         )}
                       </label>

@@ -37,6 +37,7 @@ import {
   TableRow,
 } from "~/components/ui/table";
 import { api } from "~/trpc/react";
+import { formatSpeciesName } from "~/lib/utils";
 
 type ColumnKey =
   | "ape"
@@ -482,7 +483,7 @@ export default function LogPage() {
                   {apes?.map((a) => (
                     <SelectItem key={a.id} value={String(a.id)}>
                       {a.name}
-                      {a.species ? ` (${a.species.name})` : ""}
+                      {a.species && <> (<span className="italic">{a.species.name}</span>)</>}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -611,7 +612,7 @@ export default function LogPage() {
               <TableRow key={log.id}>
                 {show("ape") && <TableCell>{log.ape?.name ?? ""}</TableCell>}
                 {show("species") && (
-                  <TableCell>{log.ape?.species?.name ?? ""}</TableCell>
+                  <TableCell>{log.ape?.species?.name ? formatSpeciesName(log.ape.species.name) : ""}</TableCell>
                 )}
                 {show("behaviour") && <TableCell>{log.behaviour}</TableCell>}
                 {show("startDatetime") && (

@@ -30,6 +30,7 @@ import {
   SelectValue,
 } from "~/components/ui/select";
 import { api } from "~/trpc/react";
+import { formatSpeciesName } from "~/lib/utils";
 
 type LogSortField = "id" | "startDatetime" | "endDatetime" | "behaviour";
 
@@ -150,7 +151,7 @@ export default function ApeProfilePage() {
               <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
                 Species
               </p>
-              <p className="mt-1">{ape?.species?.name ?? "—"}</p>
+              <p className="mt-1">{ape?.species?.name ? formatSpeciesName(ape.species.name) : "—"}</p>
             </div>
             <div>
               <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">

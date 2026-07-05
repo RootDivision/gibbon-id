@@ -17,6 +17,7 @@ import {
 } from "~/components/ui/table";
 import { api } from "~/trpc/react";
 import { useAppStore } from "~/app/store";
+import { formatSpeciesName } from "~/lib/utils";
 
 function formatTime(seconds: number): string {
   const h = Math.floor(seconds / 3600);
@@ -220,7 +221,7 @@ export default function LogPage() {
                         <span className="text-sm font-medium">{ape.name}</span>
                         {ape.species && (
                           <span className="text-muted-foreground text-xs">
-                            {ape.species.name}
+                            {formatSpeciesName(ape.species.name)}
                           </span>
                         )}
                       </div>
