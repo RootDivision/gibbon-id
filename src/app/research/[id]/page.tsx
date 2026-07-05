@@ -95,6 +95,8 @@ export default function ResearchPage() {
   const updateResearchDescription =
     api.research.updateResearchDescription.useMutation();
   const updateApeGroup = api.apeGroup.updateApeGroup.useMutation();
+  const deleteApeGroup = api.apeGroup.deleteApeGroup.useMutation();
+  const updateResearcherMutation = api.researcher.updateResearcher.useMutation();
   const updateLocation = api.research.updateLocation.useMutation();
 
   const { data: allResearchers = [], refetch: refetchResearchers } =
@@ -192,6 +194,9 @@ export default function ResearchPage() {
   const [descDraft, setDescDraft] = useState("");
 
   const [manageResearchersOpen, setManageResearchersOpen] = useState(false);
+  const [researcherDrafts, setResearcherDrafts] = useState<
+    Record<number, { firstName: string; lastName: string; email: string }>
+  >({});
 
   const [editGroupsOpen, setEditGroupsOpen] = useState(false);
   const [groupDrafts, setGroupDrafts] = useState<
@@ -1316,57 +1321,155 @@ export default function ResearchPage() {
       {/* Manage Researchers dialog */}
       <Dialog
         open={manageResearchersOpen}
-        onOpenChange={setManageResearchersOpen}
+        onOpenChange={(open) => {
+          if (open) {
+            const drafts: Record<
+              number,
+              { firstName: string; lastName: string; email: string }
+            > = {};
+            for (const r of projectResearchers) {
+              drafts[r.id] = {
+                firstName: r.firstName,
+                lastName: r.lastName,
+                email: r.email,
+              };
+            }
+            setResearcherDrafts(drafts);
+          }
+          setManageResearchersOpen(open);
+        }}
       >
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent className="max-h-[80vh] overflow-y-auto sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Manage Researchers</DialogTitle>
             <DialogDescription>
-              Remove researchers from this project.
+              Edit or remove researchers from this project.
             </DialogDescription>
           </DialogHeader>
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-4">
             {projectResearchers.length === 0 ? (
               <p className="text-muted-foreground text-sm">
                 No researchers linked.
               </p>
             ) : (
-              projectResearchers.map((r) => (
-                <div
-                  key={r.id}
-                  className="flex items-center justify-between gap-2"
-                >
-                  <span className="text-sm">
-                    {r.firstName} {r.lastName}
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="text-red-500 hover:text-red-600"
-                    disabled={removeResearcherFromProject.isPending}
-                    onClick={() =>
-                      removeResearcherFromProject.mutate(
-                        {
-                          researchProjectId: Number(researchId),
-                          researcherId: r.id,
-                        },
-                        {
-                          onSuccess: () => {
-                            void refetchProject();
-                            toast.success(
-                              `${r.firstName} ${r.lastName} removed.`,
-                            );
-                          },
-                          onError: () =>
-                            toast.error("Failed to remove researcher."),
-                        },
-                      )
-                    }
+              projectResearchers.map((r) => {
+                const draft = researcherDrafts[r.id] ?? {
+                  firstName: r.firstName,
+                  lastName: r.lastName,
+                  email: r.email,
+                };
+                return (
+                  <div
+                    key={r.id}
+                    className="flex flex-col gap-2 rounded-md border p-3"
                   >
-                    Remove
-                  </Button>
-                </div>
-              ))
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="flex flex-col gap-1">
+                        <Label htmlFor={`r-first-${r.id}`}>First Name</Label>
+                        <Input
+                          id={`r-first-${r.id}`}
+                          value={draft.firstName}
+                          onChange={(e) =>
+                            setResearcherDrafts((prev) => ({
+                              ...prev,
+                              [r.id]: { ...draft, firstName: e.target.value },
+                            }))
+                          }
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <Label htmlFor={`r-last-${r.id}`}>Last Name</Label>
+                        <Input
+                          id={`r-last-${r.id}`}
+                          value={draft.lastName}
+                          onChange={(e) =>
+                            setResearcherDrafts((prev) => ({
+                              ...prev,
+                              [r.id]: { ...draft, lastName: e.target.value },
+                            }))
+                          }
+                        />
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <Label htmlFor={`r-email-${r.id}`}>Email</Label>
+                      <Input
+                        id={`r-email-${r.id}`}
+                        type="email"
+                        value={draft.email}
+                        onChange={(e) =>
+                          setResearcherDrafts((prev) => ({
+                            ...prev,
+                            [r.id]: { ...draft, email: e.target.value },
+                          }))
+                        }
+                      />
+                    </div>
+                    <div className="flex justify-between">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-red-500 hover:text-red-600"
+                        disabled={removeResearcherFromProject.isPending}
+                        onClick={() =>
+                          removeResearcherFromProject.mutate(
+                            {
+                              researchProjectId: Number(researchId),
+                              researcherId: r.id,
+                            },
+                            {
+                              onSuccess: () => {
+                                void refetchProject();
+                                toast.success(
+                                  `${r.firstName} ${r.lastName} removed.`,
+                                );
+                              },
+                              onError: () =>
+                                toast.error("Failed to remove researcher."),
+                            },
+                          )
+                        }
+                      >
+                        Remove
+                      </Button>
+                      <Button
+                        size="sm"
+                        disabled={
+                          !draft.firstName.trim() ||
+                          !draft.lastName.trim() ||
+                          !draft.email.trim() ||
+                          updateResearcherMutation.isPending
+                        }
+                        onClick={() =>
+                          updateResearcherMutation.mutate(
+                            {
+                              id: r.id,
+                              firstName: draft.firstName.trim(),
+                              lastName: draft.lastName.trim(),
+                              email: draft.email.trim(),
+                            },
+                            {
+                              onSuccess: () => {
+                                void refetchProject();
+                                void refetchResearchers();
+                                toast.success(
+                                  `${draft.firstName} ${draft.lastName} updated.`,
+                                );
+                              },
+                              onError: () =>
+                                toast.error("Failed to update researcher."),
+                            },
+                          )
+                        }
+                      >
+                        {updateResearcherMutation.isPending
+                          ? "Saving…"
+                          : "Save"}
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })
             )}
             <div className="flex justify-end pt-2">
               <Button
@@ -1432,7 +1535,28 @@ export default function ResearchPage() {
                         placeholder="Optional notes"
                       />
                     </div>
-                    <div className="flex justify-end">
+                    <div className="flex justify-between">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-red-500 hover:text-red-600"
+                        disabled={deleteApeGroup.isPending}
+                        onClick={() =>
+                          deleteApeGroup.mutate(
+                            { id: group.id },
+                            {
+                              onSuccess: () => {
+                                void refetchProject();
+                                toast.success(`"${group.name}" deleted.`);
+                              },
+                              onError: () =>
+                                toast.error("Failed to delete group."),
+                            },
+                          )
+                        }
+                      >
+                        Delete
+                      </Button>
                       <Button
                         size="sm"
                         disabled={

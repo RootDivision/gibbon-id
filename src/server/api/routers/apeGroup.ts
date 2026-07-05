@@ -102,4 +102,10 @@ export const apeGroupRouter = createTRPCRouter({
         data: { name: input.name, notes: input.notes ?? null },
       });
     }),
+
+  deleteApeGroup: publicProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      return ctx.db.apeGroup.delete({ where: { id: input.id } });
+    }),
 });
