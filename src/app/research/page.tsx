@@ -14,7 +14,7 @@ import {
   ArrowUp,
   ArrowUpDown,
   CalendarIcon,
-  Eye,
+  Pencil,
   PlusCircle,
   Trash,
 } from "lucide-react";
@@ -48,7 +48,6 @@ import { api } from "~/trpc/react";
 import { Input } from "~/components/ui/input";
 import z from "zod";
 import { useForm } from "react-hook-form";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { cn } from "~/lib/utils";
 
@@ -61,6 +60,17 @@ const formSchema = z.object({
 });
 
 type FormValues = z.infer<typeof formSchema>;
+
+const editFormSchema = z.object({
+  title: z.string().min(1),
+  description: z.string().optional(),
+  startDate: z.date({ message: "Start date is required" }),
+  endDate: z.date().optional(),
+  locationName: z.string().min(1, "Location name is required"),
+  locationType: z.string().min(1, "Location type is required"),
+});
+
+type EditFormValues = z.infer<typeof editFormSchema>;
 
 type BackendSortField =
   | "id"
@@ -132,9 +142,58 @@ export default function ResearchPage() {
     }
     return data;
   }, [data, sort]);
-  const router = useRouter();
-
   const addResearch = api.research.addResearch.useMutation();
+  const updateResearch = api.research.updateResearch.useMutation();
+
+  const [editOpen, setEditOpen] = useState(false);
+  const [editingResearch, setEditingResearch] = useState<
+    (typeof displayData)[number] | null
+  >(null);
+
+  const editForm = useForm<EditFormValues>({
+    resolver: zodResolver(editFormSchema),
+    defaultValues: {
+      title: "",
+      description: "",
+      startDate: undefined,
+      endDate: undefined,
+      locationName: "",
+      locationType: "",
+    },
+  });
+
+  function openEditDialog(research: (typeof displayData)[number]) {
+    setEditingResearch(research);
+    editForm.reset({
+      title: research.title,
+      description: research.description ?? "",
+      startDate: new Date(research.startDate),
+      endDate: research.endDate ? new Date(research.endDate) : undefined,
+      locationName: research.locations[0]?.name ?? "",
+      locationType: research.locations[0]?.type ?? "",
+    });
+    setEditOpen(true);
+  }
+
+  function onEditSubmit(values: EditFormValues) {
+    if (!editingResearch) return;
+    updateResearch.mutate(
+      {
+        id: editingResearch.id,
+        ...values,
+        startDate: values.startDate.toISOString(),
+        endDate: values.endDate?.toISOString() ?? null,
+      },
+      {
+        onSuccess: () => {
+          void refetch();
+          setEditOpen(false);
+          toast.success("Research project updated.");
+        },
+        onError: () => toast.error("Failed to update research project."),
+      },
+    );
+  }
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -302,6 +361,167 @@ export default function ResearchPage() {
         All research projects are listed below. Click a project title to view
         its sessions, logs, and details.
       </p>
+
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Research Project</DialogTitle>
+            <DialogDescription>
+              Update the details of this research project.
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...editForm}>
+            <form
+              onSubmit={editForm.handleSubmit(onEditSubmit)}
+              className="space-y-4"
+            >
+              <FormField
+                control={editForm.control}
+                name="title"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Title</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Research project title"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={editForm.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Brief description (optional)"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={editForm.control}
+                name="startDate"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Start Date</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground",
+                            )}
+                          >
+                            {field.value
+                              ? format(field.value, "PPP")
+                              : "Pick a date"}
+                            <CalendarIcon className="ml-auto size-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={editForm.control}
+                name="endDate"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>End Date</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground",
+                            )}
+                          >
+                            {field.value
+                              ? format(field.value, "PPP")
+                              : "Pick a date (optional)"}
+                            <CalendarIcon className="ml-auto size-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={editForm.control}
+                name="locationName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Location</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g. Danum Valley" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={editForm.control}
+                name="locationType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Location Type</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g. Forest, Savanna" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="flex justify-end gap-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setEditOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={updateResearch.isPending}>
+                  {updateResearch.isPending ? "Saving…" : "Save changes"}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
       <Table className="w-full">
         <TableHeader>
           <TableRow>
@@ -377,12 +597,12 @@ export default function ResearchPage() {
               <TableCell>{research.createdAt.toLocaleString()}</TableCell>
               <TableCell>
                 <Button
-                  onClick={() => router.push(`/research/${research.id}`)}
+                  onClick={() => openEditDialog(research)}
                   variant="ghost"
                   size="icon"
-                  aria-label={`View ${research.title}`}
+                  aria-label={`Edit ${research.title}`}
                 >
-                  <Eye />
+                  <Pencil />
                 </Button>
                 <Button
                   variant="ghost"
