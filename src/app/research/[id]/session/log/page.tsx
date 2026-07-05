@@ -50,6 +50,7 @@ export default function LogPage() {
   const [behaviour, setBehaviour] = useState("");
   const [secondaryBehaviour, setSecondaryBehaviour] = useState("");
   const [apeId, setApeId] = useState("");
+  const [groupByApe, setGroupByApe] = useState(false);
   const [sessionIntervalId, setSessionIntervalId] = useState<number | null>(
     null,
   );
@@ -123,6 +124,16 @@ export default function LogPage() {
 
     if (!apeId) {
       toast.error("Please select an ape before saving.");
+      return;
+    }
+
+    if (!researcherId) {
+      toast.error("No researcher selected. Please go back and select a researcher.");
+      return;
+    }
+
+    if (!methodId) {
+      toast.error("No method selected. Please go back and select a method.");
       return;
     }
 
@@ -252,7 +263,7 @@ export default function LogPage() {
             onChange={(e) => setSecondaryBehaviour(e.target.value)}
             disabled={!running}
           />
-          <Button type="submit" disabled={!running || !apeId || addLog.isPending}>
+          <Button type="submit" disabled={!running || !apeId || !researcherId || !methodId || addLog.isPending}>
             {addLog.isPending ? "Saving…" : "Save log"}
           </Button>
         </div>
@@ -260,7 +271,29 @@ export default function LogPage() {
 
       {sessionLogs && sessionLogs.length > 0 && (
         <div>
-          <h2 className="mb-2 text-lg font-semibold">Session logs</h2>
+          <div className="mb-2 flex items-center justify-between">
+            <h2 className="text-lg font-semibold">Session logs</h2>
+            <div className="flex overflow-hidden rounded-md border">
+              <Button
+                type="button"
+                size="sm"
+                variant={groupByApe ? "ghost" : "secondary"}
+                className="rounded-none"
+                onClick={() => setGroupByApe(false)}
+              >
+                Chronological
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={groupByApe ? "secondary" : "ghost"}
+                className="rounded-none border-l"
+                onClick={() => setGroupByApe(true)}
+              >
+                Group by Ape
+              </Button>
+            </div>
+          </div>
           <Table>
             <TableHeader>
               <TableRow>
@@ -270,40 +303,92 @@ export default function LogPage() {
                 <TableHead>Start Time</TableHead>
                 <TableHead>End Time</TableHead>
                 <TableHead>Time Difference</TableHead>
-                <TableHead>Ape</TableHead>
-                <TableHead>Method</TableHead>
+                {!groupByApe && <TableHead>Ape</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sessionLogs.map((log) => {
-                const diffSec = Math.round(
-                  (new Date(log.endDatetime).getTime() -
-                    new Date(log.startDatetime).getTime()) /
-                    1000,
-                );
-                const h = Math.floor(diffSec / 3600);
-                const m = Math.floor((diffSec % 3600) / 60);
-                const s = diffSec % 60;
-                const diffFormatted = [h, m, s]
-                  .map((v) => String(v).padStart(2, "0"))
-                  .join(":");
-                return (
-                  <TableRow key={log.id}>
-                    <TableCell>{log.id}</TableCell>
-                    <TableCell>{log.behaviour}</TableCell>
-                    <TableCell>{log.secondaryBehaviour ?? "—"}</TableCell>
-                    <TableCell>
-                      {new Date(log.startDatetime).toLocaleTimeString()}
-                    </TableCell>
-                    <TableCell>
-                      {new Date(log.endDatetime).toLocaleTimeString()}
-                    </TableCell>
-                    <TableCell>{diffFormatted}</TableCell>
-                    <TableCell>{log.ape?.name ?? ""}</TableCell>
-                    <TableCell>{log.method?.name ?? ""}</TableCell>
-                  </TableRow>
-                );
-              })}
+              {!groupByApe
+                ? sessionLogs.map((log) => {
+                    const diffSec = Math.round(
+                      (new Date(log.endDatetime).getTime() -
+                        new Date(log.startDatetime).getTime()) /
+                        1000,
+                    );
+                    const diffFormatted = [
+                      Math.floor(diffSec / 3600),
+                      Math.floor((diffSec % 3600) / 60),
+                      diffSec % 60,
+                    ]
+                      .map((v) => String(v).padStart(2, "0"))
+                      .join(":");
+                    return (
+                      <TableRow key={log.id}>
+                        <TableCell>{log.id}</TableCell>
+                        <TableCell>{log.behaviour}</TableCell>
+                        <TableCell>{log.secondaryBehaviour ?? "—"}</TableCell>
+                        <TableCell>
+                          {new Date(log.startDatetime).toLocaleTimeString()}
+                        </TableCell>
+                        <TableCell>
+                          {new Date(log.endDatetime).toLocaleTimeString()}
+                        </TableCell>
+                        <TableCell>{diffFormatted}</TableCell>
+                        <TableCell>{log.ape?.name ?? ""}</TableCell>
+                      </TableRow>
+                    );
+                  })
+                : selectedApes.flatMap((ape) => {
+                    const apeLogs = sessionLogs
+                      .filter((l) => l.apeId === ape.id)
+                      .sort(
+                        (a, b) =>
+                          new Date(a.startDatetime).getTime() -
+                          new Date(b.startDatetime).getTime(),
+                      );
+                    if (apeLogs.length === 0) return [];
+                    return [
+                      <TableRow key={`group-${ape.id}`} className="bg-muted/50">
+                        <TableCell colSpan={6} className="py-2 font-semibold">
+                          {ape.name}
+                          {ape.species ? <> &mdash; {formatSpeciesName(ape.species.name)}</> : ""}
+                        </TableCell>
+                      </TableRow>,
+                      ...apeLogs.map((log) => {
+                        const diffSec = Math.round(
+                          (new Date(log.endDatetime).getTime() -
+                            new Date(log.startDatetime).getTime()) /
+                            1000,
+                        );
+                        const diffFormatted = [
+                          Math.floor(diffSec / 3600),
+                          Math.floor((diffSec % 3600) / 60),
+                          diffSec % 60,
+                        ]
+                          .map((v) => String(v).padStart(2, "0"))
+                          .join(":");
+                        return (
+                          <TableRow key={log.id}>
+                            <TableCell>{log.id}</TableCell>
+                            <TableCell>{log.behaviour}</TableCell>
+                            <TableCell>
+                              {log.secondaryBehaviour ?? "—"}
+                            </TableCell>
+                            <TableCell>
+                              {new Date(
+                                log.startDatetime,
+                              ).toLocaleTimeString()}
+                            </TableCell>
+                            <TableCell>
+                              {new Date(
+                                log.endDatetime,
+                              ).toLocaleTimeString()}
+                            </TableCell>
+                            <TableCell>{diffFormatted}</TableCell>
+                          </TableRow>
+                        );
+                      }),
+                    ];
+                  })}
             </TableBody>
           </Table>
         </div>
