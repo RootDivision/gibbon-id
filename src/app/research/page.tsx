@@ -31,6 +31,13 @@ import {
   DialogTitle,
 } from "~/components/ui/dialog";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "~/components/ui/select";
+import {
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -55,7 +62,7 @@ const formSchema = z.object({
   description: z.string().optional(),
   startDate: z.date({ message: "Start date is required" }),
   locationName: z.string().min(1, "Location name is required"),
-  locationType: z.string().min(1, "Location type is required"),
+  locationType: z.enum(["Captive", "Wild"]),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -66,7 +73,7 @@ const editFormSchema = z.object({
   startDate: z.date({ message: "Start date is required" }),
   endDate: z.date().optional(),
   locationName: z.string().min(1, "Location name is required"),
-  locationType: z.string().min(1, "Location type is required"),
+  locationType: z.enum(["Captive", "Wild"]),
 });
 
 type EditFormValues = z.infer<typeof editFormSchema>;
@@ -324,9 +331,20 @@ export default function ResearchPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Location Type</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g. Forest, Savanna" {...field} />
-                      </FormControl>
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select type…" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Captive">Captive</SelectItem>
+                          <SelectItem value="Wild">Wild</SelectItem>
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -498,9 +516,20 @@ export default function ResearchPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Location Type</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g. Forest, Savanna" {...field} />
-                    </FormControl>
+                    <Select
+                      value={field.value}
+                      onValueChange={field.onChange}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select type…" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Captive">Captive</SelectItem>
+                        <SelectItem value="Wild">Wild</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
