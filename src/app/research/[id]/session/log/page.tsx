@@ -118,6 +118,11 @@ export default function LogPage() {
   function handleSave(e: React.FormEvent) {
     e.preventDefault();
 
+    if (!apeId) {
+      toast.error("Please select an ape before saving.");
+      return;
+    }
+
     const endTime = new Date();
     addLog.mutate(
       {
@@ -235,7 +240,7 @@ export default function LogPage() {
             onChange={(e) => setBehaviour(e.target.value)}
             disabled={!running}
           />
-          <Button type="submit" disabled={!running || addLog.isPending}>
+          <Button type="submit" disabled={!running || !apeId || addLog.isPending}>
             {addLog.isPending ? "Saving…" : "Save log"}
           </Button>
         </div>
