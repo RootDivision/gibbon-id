@@ -210,6 +210,11 @@ export default function ResearchPage() {
   const [editGroupMembersOpen, setEditGroupMembersOpen] = useState(false);
   const [editingGroupId, setEditingGroupId] = useState<number | null>(null);
   const [addApeToGroupSelect, setAddApeToGroupSelect] = useState("");
+  const [gmApeTab, setGmApeTab] = useState<"existing" | "new">("existing");
+  const [gmNewApeName, setGmNewApeName] = useState("");
+  const [gmNewApeSpeciesId, setGmNewApeSpeciesId] = useState("");
+  const [gmNewApeSex, setGmNewApeSex] = useState("");
+  const [gmNewApeAgeClass, setGmNewApeAgeClass] = useState("");
 
   const [editApeOpen, setEditApeOpen] = useState(false);
   const [editingApe, setEditingApe] = useState<{
@@ -1676,7 +1681,14 @@ export default function ResearchPage() {
       <Dialog
         open={editGroupMembersOpen}
         onOpenChange={(open) => {
-          if (!open) setAddApeToGroupSelect("");
+          if (!open) {
+            setAddApeToGroupSelect("");
+            setGmApeTab("existing");
+            setGmNewApeName("");
+            setGmNewApeSpeciesId("");
+            setGmNewApeSex("");
+            setGmNewApeAgeClass("");
+          }
           setEditGroupMembersOpen(open);
         }}
       >
@@ -1755,57 +1767,246 @@ export default function ResearchPage() {
 
                   <div className="flex flex-col gap-2">
                     <Label className="text-sm font-medium">Add Ape</Label>
-                    <div className="flex gap-2">
-                      <Select
-                        value={addApeToGroupSelect}
-                        onValueChange={setAddApeToGroupSelect}
-                      >
-                        <SelectTrigger className="flex-1">
-                          <SelectValue placeholder="Select an ape…" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {apesNotInGroup.map((ape) => (
-                            <SelectItem key={ape.id} value={String(ape.id)}>
-                              {ape.name}
-                              {ape.group && (
-                                <span className="text-muted-foreground ml-1 text-xs">
-                                  (from {ape.group.name})
-                                </span>
-                              )}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                    <div className="flex rounded-md border">
                       <Button
-                        size="sm"
-                        disabled={
-                          !addApeToGroupSelect || addApeToGroup.isPending
-                        }
-                        onClick={() => {
-                          if (!editingGroupId || !addApeToGroupSelect) return;
-                          addApeToGroup.mutate(
-                            {
-                              apeId: Number(addApeToGroupSelect),
-                              groupId: editingGroupId,
-                            },
-                            {
-                              onSuccess: () => {
-                                void refetchProject();
-                                setAddApeToGroupSelect("");
-                                toast.success("Ape added to group.");
-                              },
-                              onError: () =>
-                                toast.error("Failed to add ape."),
-                            },
-                          );
-                        }}
+                        type="button"
+                        variant={gmApeTab === "existing" ? "secondary" : "ghost"}
+                        className="flex-1 rounded-r-none"
+                        onClick={() => setGmApeTab("existing")}
                       >
-                        Add
+                        Select existing
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={gmApeTab === "new" ? "secondary" : "ghost"}
+                        className="flex-1 rounded-l-none"
+                        onClick={() => setGmApeTab("new")}
+                      >
+                        Create new
                       </Button>
                     </div>
+
+                    {gmApeTab === "existing" ? (
+                      <div className="flex gap-2">
+                        <Select
+                          value={addApeToGroupSelect}
+                          onValueChange={setAddApeToGroupSelect}
+                        >
+                          <SelectTrigger className="flex-1">
+                            <SelectValue placeholder="Select an ape…" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {apesNotInGroup.map((ape) => (
+                              <SelectItem key={ape.id} value={String(ape.id)}>
+                                {ape.name}
+                                {ape.group && (
+                                  <span className="text-muted-foreground ml-1 text-xs">
+                                    (from {ape.group.name})
+                                  </span>
+                                )}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          size="sm"
+                          disabled={
+                            !addApeToGroupSelect || addApeToGroup.isPending
+                          }
+                          onClick={() => {
+                            if (!editingGroupId || !addApeToGroupSelect) return;
+                            addApeToGroup.mutate(
+                              {
+                                apeId: Number(addApeToGroupSelect),
+                                groupId: editingGroupId,
+                              },
+                              {
+                                onSuccess: () => {
+                                  void refetchProject();
+                                  setAddApeToGroupSelect("");
+                                  toast.success("Ape added to group.");
+                                },
+                                onError: () =>
+                                  toast.error("Failed to add ape."),
+                              },
+                            );
+                          }}
+                        >
+                          Add
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-2">
+                        <div className="flex flex-col gap-1">
+                          <Label htmlFor="gm-ape-name" className="text-xs">
+                            Name
+                          </Label>
+                          <Input
+                            id="gm-ape-name"
+                            placeholder="e.g. Kiko"
+                            value={gmNewApeName}
+                            onChange={(e) => setGmNewApeName(e.target.value)}
+                          />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <Label
+                            htmlFor="gm-ape-species"
+                            className="text-xs"
+                          >
+                            Species
+                          </Label>
+                          <Select
+                            value={gmNewApeSpeciesId}
+                            onValueChange={setGmNewApeSpeciesId}
+                          >
+                            <SelectTrigger
+                              id="gm-ape-species"
+                              className="w-full"
+                            >
+                              <SelectValue placeholder="Optional…" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {allSpecies.map((s) => (
+                                <SelectItem key={s.id} value={String(s.id)}>
+                                  {formatSpeciesName(s.name)}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="flex flex-col gap-1">
+                            <Label
+                              htmlFor="gm-ape-sex"
+                              className="text-xs"
+                            >
+                              Sex
+                            </Label>
+                            <Select
+                              value={gmNewApeSex}
+                              onValueChange={setGmNewApeSex}
+                            >
+                              <SelectTrigger
+                                id="gm-ape-sex"
+                                className="w-full"
+                              >
+                                <SelectValue placeholder="Optional…" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Male">Male</SelectItem>
+                                <SelectItem value="Female">Female</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <Label
+                              htmlFor="gm-ape-age"
+                              className="text-xs"
+                            >
+                              Age Class
+                            </Label>
+                            <Select
+                              value={gmNewApeAgeClass}
+                              onValueChange={setGmNewApeAgeClass}
+                            >
+                              <SelectTrigger
+                                id="gm-ape-age"
+                                className="w-full"
+                              >
+                                <SelectValue placeholder="Optional…" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Infant">Infant</SelectItem>
+                                <SelectItem value="Juvenile">
+                                  Juvenile
+                                </SelectItem>
+                                <SelectItem value="Subadult">
+                                  Subadult
+                                </SelectItem>
+                                <SelectItem value="Adult">Adult</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        <div className="flex justify-end">
+                          <Button
+                            size="sm"
+                            disabled={
+                              !gmNewApeName.trim() ||
+                              createApe.isPending ||
+                              addApeToGroup.isPending
+                            }
+                            onClick={async () => {
+                              if (!gmNewApeName.trim() || !editingGroupId)
+                                return;
+                              try {
+                                const created =
+                                  await createApe.mutateAsync({
+                                    name: gmNewApeName.trim(),
+                                    speciesId: gmNewApeSpeciesId
+                                      ? Number(gmNewApeSpeciesId)
+                                      : null,
+                                    sex:
+                                      (gmNewApeSex as
+                                        | "Male"
+                                        | "Female") || null,
+                                    ageClass:
+                                      (gmNewApeAgeClass as
+                                        | "Infant"
+                                        | "Juvenile"
+                                        | "Subadult"
+                                        | "Adult") || null,
+                                  });
+                                await addApeToGroup.mutateAsync({
+                                  apeId: created.id,
+                                  groupId: editingGroupId,
+                                });
+                                void refetchProject();
+                                setGmNewApeName("");
+                                setGmNewApeSpeciesId("");
+                                setGmNewApeSex("");
+                                setGmNewApeAgeClass("");
+                                toast.success(
+                                  `${created.name} created and added.`,
+                                );
+                              } catch {
+                                toast.error("Failed to create ape.");
+                              }
+                            }}
+                          >
+                            {createApe.isPending || addApeToGroup.isPending
+                              ? "Creating…"
+                              : "Create & Add"}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
-                  <div className="flex justify-end">
+                  <div className="flex justify-between">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-red-500 hover:text-red-600"
+                      disabled={deleteApeGroup.isPending}
+                      onClick={() => {
+                        if (!editingGroupId) return;
+                        deleteApeGroup.mutate(
+                          { id: editingGroupId },
+                          {
+                            onSuccess: () => {
+                              void refetchProject();
+                              setEditGroupMembersOpen(false);
+                              toast.success("Group deleted.");
+                            },
+                            onError: () =>
+                              toast.error("Failed to delete group."),
+                          },
+                        );
+                      }}
+                    >
+                      Delete Group
+                    </Button>
                     <Button
                       variant="outline"
                       onClick={() => setEditGroupMembersOpen(false)}
