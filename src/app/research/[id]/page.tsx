@@ -367,9 +367,6 @@ export default function ResearchPage() {
             <Pencil className="size-4" />
           </Button>
         </div>
-        <Button onClick={() => setSessionModalOpen(true)}>
-          Start New Session
-        </Button>
       </div>
       <div className="flex items-center gap-2">
         <p className="text-muted-foreground text-sm">
@@ -412,6 +409,18 @@ export default function ResearchPage() {
         >
           <Pencil className="size-3" />
         </Button>
+      </div>
+
+      <div>
+        <button
+          onClick={() => setSessionModalOpen(true)}
+          className="hover:bg-muted/60 flex h-40 w-52 flex-col items-center justify-center gap-3 rounded-2xl border-2 bg-white shadow-sm transition-colors"
+        >
+          <span className="text-4xl">📖</span>
+          <span className="text-base font-semibold">
+            Start Live Observation Session
+          </span>
+        </button>
       </div>
 
       <div className="flex items-center gap-2">
