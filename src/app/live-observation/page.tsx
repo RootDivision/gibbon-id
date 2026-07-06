@@ -46,7 +46,7 @@ const newFormSchema = z.object({
   startDate: z.date({ message: "Start date is required" }),
   description: z.string().optional(),
   locationName: z.string().min(1, "Location is required"),
-  locationType: z.string().min(1, "Location type is required"),
+  locationType: z.enum(["Captive", "Wild"]),
 });
 
 const existingFormSchema = z.object({
@@ -229,9 +229,20 @@ export default function LiveObservation() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Location Type</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g. Forest, Savanna" {...field} />
-                    </FormControl>
+                    <Select
+                      value={field.value}
+                      onValueChange={field.onChange}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select type…" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Captive">Captive</SelectItem>
+                        <SelectItem value="Wild">Wild</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
