@@ -112,11 +112,23 @@ export default function LiveObservation() {
   return (
     <main className="flex flex-col gap-4">
       <h1>Live Observation</h1>
-      <section className="flex gap-4">
-        <Button onClick={() => setIsNewOpen(true)}>New research project</Button>
-        <Button onClick={() => setIsExistingOpen(true)}>
-          Existing research project
-        </Button>
+      <section className="flex gap-6">
+        <button
+          onClick={() => setIsNewOpen(true)}
+          className="hover:bg-muted/60 flex h-40 w-52 flex-col items-center justify-center gap-3 rounded-2xl border-2 bg-white shadow-sm transition-colors"
+        >
+          <span className="text-4xl">＋</span>
+          <span className="text-base font-semibold">New Research Project</span>
+        </button>
+        <button
+          onClick={() => setIsExistingOpen(true)}
+          className="hover:bg-muted/60 flex h-40 w-52 flex-col items-center justify-center gap-3 rounded-2xl border-2 bg-white shadow-sm transition-colors"
+        >
+          <span className="text-4xl">📋</span>
+          <span className="text-base font-semibold">
+            Existing Research Project
+          </span>
+        </button>
       </section>
 
       {/* New research project dialog */}
