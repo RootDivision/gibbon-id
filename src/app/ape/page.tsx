@@ -340,10 +340,6 @@ export default function ApePage() {
             <SlidersHorizontal className="mr-2 size-4" />
             {showFilters ? "Hide filters" : "Show filters"}
           </Button>
-          <Button onClick={openAdd}>
-            <PlusCircle />
-            Add ape
-          </Button>
         </div>
       </div>
 
