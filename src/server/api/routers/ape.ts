@@ -91,7 +91,16 @@ export const apeRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       return ctx.db.ape.findUnique({
         where: { id: input.id },
-        include: { species: true, group: true },
+        include: {
+          species: true,
+          group: {
+            include: {
+              researchProjects: {
+                include: { locations: true },
+              },
+            },
+          },
+        },
       });
     }),
 });
