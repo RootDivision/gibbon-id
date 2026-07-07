@@ -32,7 +32,7 @@ export const menuItems = [
 
 export const actions = [
   {
-    title: "Start live observation",
+    title: "Start Live Observation",
     url: "/live-observation",
     icon: Tv2,
   },

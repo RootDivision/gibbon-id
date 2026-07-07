@@ -64,7 +64,9 @@ export default function ResearchPage() {
     notFound();
   }
 
-  const { data: methods = [] } = api.method.getMethods.useQuery();
+  const { data: methods = [], refetch: refetchMethods } =
+    api.method.getMethods.useQuery();
+  const addMethod = api.method.addMethod.useMutation();
 
   const { data: logsByResearchId = [] } =
     api.research.getLogsByResearchId.useQuery({
@@ -107,6 +109,8 @@ export default function ResearchPage() {
     api.researcher.getResearchers.useQuery();
 
   const [addResearcherOpen, setAddResearcherOpen] = useState(false);
+  const [showNewMethod, setShowNewMethod] = useState(false);
+  const [newMethodName, setNewMethodName] = useState("");
   const [selectedResearcherId, setSelectedResearcherId] = useState("");
   const [researcherMode, setResearcherMode] = useState<"existing" | "new">(
     "existing",
@@ -638,6 +642,8 @@ export default function ResearchPage() {
           if (!open) {
             clearSelectedApes();
             setSessionName("");
+            setShowNewMethod(false);
+            setNewMethodName("");
           }
           setSessionModalOpen(open);
         }}
@@ -742,7 +748,7 @@ export default function ResearchPage() {
               </p>
             )}
 
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
               <Label htmlFor="method-select">Observation method</Label>
               <Select
                 value={methodId ? String(methodId) : ""}
@@ -759,6 +765,60 @@ export default function ResearchPage() {
                   ))}
                 </SelectContent>
               </Select>
+              {!showNewMethod ? (
+                <button
+                  type="button"
+                  className="text-muted-foreground hover:text-foreground text-left text-xs underline"
+                  onClick={() => setShowNewMethod(true)}
+                >
+                  + Add new method
+                </button>
+              ) : (
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="New method name…"
+                    value={newMethodName}
+                    onChange={(e) => setNewMethodName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Escape") {
+                        setShowNewMethod(false);
+                        setNewMethodName("");
+                      }
+                    }}
+                  />
+                  <Button
+                    size="sm"
+                    disabled={!newMethodName.trim() || addMethod.isPending}
+                    onClick={async () => {
+                      if (!newMethodName.trim()) return;
+                      try {
+                        const created = await addMethod.mutateAsync({
+                          name: newMethodName.trim(),
+                        });
+                        selectMethod(created.id);
+                        void refetchMethods();
+                        setNewMethodName("");
+                        setShowNewMethod(false);
+                        toast.success(`Method “${created.name}” added.`);
+                      } catch {
+                        toast.error("Failed to add method.");
+                      }
+                    }}
+                  >
+                    {addMethod.isPending ? "Adding…" : "Add"}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setShowNewMethod(false);
+                      setNewMethodName("");
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              )}
             </div>
 
             <div className="flex justify-end gap-2 pt-2">

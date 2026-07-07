@@ -44,16 +44,16 @@ export default async function Home() {
       <h1>Dashboard</h1>
 
       <div className="mb-6 space-y-2 text-sm text-muted-foreground">
-        <p>Welcome to Gibbon ID, your central hub for gibbon behavioural research. 🐒</p>
+        <p>Welcome to Gibbon ID, your central hub for gibbon behavioural research 🐒</p>
         <br />
         <p>Here is what you can do:</p>
         <ul className="space-y-1">
-          <li>📊 <strong>Track Research Projects:</strong> Maintain an organized, centralized overview of all your study groups and long-term data.</li>
-          <li>⏱️ <strong>Live Observation Logging:</strong> Use the built-in timer to log primary and secondary behaviours in real-time as you observe (even multiple apes).</li>
-          <li>🔍 <strong>Analyze &amp; Review:</strong> Easily sort, filter, and review historical logs grouped by individual apes.</li>
+          <li>🌱 <strong>Track Your Research Projects:</strong> Maintain an organized, centralized overview of all your study groups and long-term data.</li>
+          <li>⏱️ <strong>Live Observation Logging:</strong> Use the built-in timer to log primary and secondary behaviours in real-time as you observe one or multiple apes.</li>
+          <li>🔍 <strong>Analyze &amp; Review:</strong> Easily sort, filter, and review historical logs.</li>
         </ul>
         <br />
-        <p>Ready to start? Head over to the sidebar to log a new session or view your active projects.</p>
+        <p>Ready to start? Head over to the sidebar to view your active projects or start a new live observation!</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -74,7 +74,7 @@ export default async function Home() {
         ))}
       </div>
 
-      <h2 className="mt-6 text-xl font-semibold">Research Projects</h2>
+      <h2 className="mt-6 text-xl font-semibold">My Research Projects</h2>
 
       <div className="grid gap-4 lg:grid-cols-3">
         {researchProjects.map((research) => (
