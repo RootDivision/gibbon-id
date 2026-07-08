@@ -83,7 +83,8 @@ export default function ResearchPage() {
     sortDir: "asc",
   });
 
-  const { data: allSpecies = [] } = api.ape.getSpecies.useQuery();
+  const { data: allSpecies = [], refetch: refetchSpecies } = api.ape.getSpecies.useQuery();
+  const addSpecies = api.ape.addSpecies.useMutation();
 
   const addApeGroupToProject = api.apeGroup.addApeGroupToProject.useMutation();
   const addResearcherToProject =
@@ -219,6 +220,10 @@ export default function ResearchPage() {
   const [gmNewApeSpeciesId, setGmNewApeSpeciesId] = useState("");
   const [gmNewApeSex, setGmNewApeSex] = useState("");
   const [gmNewApeAgeClass, setGmNewApeAgeClass] = useState("");
+  const [gmShowNewSpecies, setGmShowNewSpecies] = useState(false);
+  const [gmNewSpeciesName, setGmNewSpeciesName] = useState("");
+  const [addShowNewSpecies, setAddShowNewSpecies] = useState(false);
+  const [addNewSpeciesName, setAddNewSpeciesName] = useState("");
 
   const [editApeOpen, setEditApeOpen] = useState(false);
   const [editingApe, setEditingApe] = useState<{
@@ -268,6 +273,8 @@ export default function ResearchPage() {
     setNewApeSex("");
     setNewApeAgeClass("");
     setApeGroupTab("existing");
+    setAddShowNewSpecies(false);
+    setAddNewSpeciesName("");
     setAddGroupOpen(true);
   }
 
@@ -862,6 +869,8 @@ export default function ResearchPage() {
             setNewApeSex("");
             setNewApeAgeClass("");
             setApeGroupTab("existing");
+            setAddShowNewSpecies(false);
+            setAddNewSpeciesName("");
           }
           setAddGroupOpen(open);
         }}
@@ -980,6 +989,64 @@ export default function ResearchPage() {
                         ))}
                       </SelectContent>
                     </Select>
+                    {!addShowNewSpecies ? (
+                      <button
+                        type="button"
+                        className="text-muted-foreground hover:text-foreground text-left text-xs underline"
+                        onClick={() => setAddShowNewSpecies(true)}
+                      >
+                        + Add new species
+                      </button>
+                    ) : (
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="e.g. Hylobates lar"
+                          value={addNewSpeciesName}
+                          onChange={(e) => setAddNewSpeciesName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Escape") {
+                              setAddShowNewSpecies(false);
+                              setAddNewSpeciesName("");
+                            }
+                          }}
+                        />
+                        <Button
+                          size="sm"
+                          disabled={
+                            !addNewSpeciesName.trim() || addSpecies.isPending
+                          }
+                          onClick={async () => {
+                            if (!addNewSpeciesName.trim()) return;
+                            try {
+                              const created = await addSpecies.mutateAsync({
+                                name: addNewSpeciesName.trim(),
+                              });
+                              void refetchSpecies();
+                              setNewApeSpeciesId(String(created.id));
+                              setAddNewSpeciesName("");
+                              setAddShowNewSpecies(false);
+                              toast.success(
+                                `Species "${formatSpeciesName(created.name)}" added.`,
+                              );
+                            } catch {
+                              toast.error("Failed to add species.");
+                            }
+                          }}
+                        >
+                          {addSpecies.isPending ? "Adding…" : "Add"}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setAddShowNewSpecies(false);
+                            setAddNewSpeciesName("");
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    )}
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div className="flex flex-col gap-1">
@@ -1757,6 +1824,8 @@ export default function ResearchPage() {
             setGmNewApeSpeciesId("");
             setGmNewApeSex("");
             setGmNewApeAgeClass("");
+            setGmShowNewSpecies(false);
+            setGmNewSpeciesName("");
           }
           setEditGroupMembersOpen(open);
         }}
@@ -1942,6 +2011,71 @@ export default function ResearchPage() {
                               ))}
                             </SelectContent>
                           </Select>
+                          {!gmShowNewSpecies ? (
+                            <button
+                              type="button"
+                              className="text-muted-foreground hover:text-foreground text-left text-xs underline"
+                              onClick={() => setGmShowNewSpecies(true)}
+                            >
+                              + Add new species
+                            </button>
+                          ) : (
+                            <div className="flex gap-2">
+                              <Input
+                                placeholder="e.g. Hylobates lar"
+                                value={gmNewSpeciesName}
+                                onChange={(e) =>
+                                  setGmNewSpeciesName(e.target.value)
+                                }
+                                onKeyDown={(e) => {
+                                  if (e.key === "Escape") {
+                                    setGmShowNewSpecies(false);
+                                    setGmNewSpeciesName("");
+                                  }
+                                }}
+                                className="h-7 text-xs"
+                              />
+                              <Button
+                                size="sm"
+                                className="h-7 text-xs"
+                                disabled={
+                                  !gmNewSpeciesName.trim() ||
+                                  addSpecies.isPending
+                                }
+                                onClick={async () => {
+                                  if (!gmNewSpeciesName.trim()) return;
+                                  try {
+                                    const created =
+                                      await addSpecies.mutateAsync({
+                                        name: gmNewSpeciesName.trim(),
+                                      });
+                                    void refetchSpecies();
+                                    setGmNewApeSpeciesId(String(created.id));
+                                    setGmNewSpeciesName("");
+                                    setGmShowNewSpecies(false);
+                                    toast.success(
+                                      `Species "${formatSpeciesName(created.name)}" added.`,
+                                    );
+                                  } catch {
+                                    toast.error("Failed to add species.");
+                                  }
+                                }}
+                              >
+                                {addSpecies.isPending ? "Adding…" : "Add"}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-xs"
+                                onClick={() => {
+                                  setGmShowNewSpecies(false);
+                                  setGmNewSpeciesName("");
+                                }}
+                              >
+                                Cancel
+                              </Button>
+                            </div>
+                          )}
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                           <div className="flex flex-col gap-1">

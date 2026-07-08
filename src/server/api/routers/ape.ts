@@ -69,6 +69,12 @@ export const apeRouter = createTRPCRouter({
     return ctx.db.species.findMany({ orderBy: { name: "asc" } });
   }),
 
+  addSpecies: publicProcedure
+    .input(z.object({ name: z.string().min(1) }))
+    .mutation(async ({ ctx, input }) => {
+      return ctx.db.species.create({ data: { name: input.name } });
+    }),
+
   addApe: publicProcedure.input(apeInput).mutation(async ({ ctx, input }) => {
     return ctx.db.ape.create({ data: input });
   }),
