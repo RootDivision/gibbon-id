@@ -74,7 +74,7 @@ export default function LiveObservation() {
       startDate: undefined,
       description: "",
       locationName: "",
-      locationType: "",
+      locationType: undefined,
     },
   });
 
