@@ -43,7 +43,16 @@ export const apeRouter = createTRPCRouter({
       const apeResponse = ctx.db.ape.findMany({
         where,
         orderBy: { [input.sortField]: input.sortDir },
-        include: { species: true, group: true },
+        include: {
+          species: true,
+          group: {
+            include: {
+              researchProjects: {
+                include: { locations: true },
+              },
+            },
+          },
+        },
       });
 
       const modified = await apeResponse.then((apes) =>
@@ -59,6 +68,12 @@ export const apeRouter = createTRPCRouter({
   getSpecies: publicProcedure.query(async ({ ctx }) => {
     return ctx.db.species.findMany({ orderBy: { name: "asc" } });
   }),
+
+  addSpecies: publicProcedure
+    .input(z.object({ name: z.string().min(1) }))
+    .mutation(async ({ ctx, input }) => {
+      return ctx.db.species.create({ data: { name: input.name } });
+    }),
 
   addApe: publicProcedure.input(apeInput).mutation(async ({ ctx, input }) => {
     return ctx.db.ape.create({ data: input });
@@ -82,7 +97,16 @@ export const apeRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       return ctx.db.ape.findUnique({
         where: { id: input.id },
-        include: { species: true, group: true },
+        include: {
+          species: true,
+          group: {
+            include: {
+              researchProjects: {
+                include: { locations: true },
+              },
+            },
+          },
+        },
       });
     }),
 });

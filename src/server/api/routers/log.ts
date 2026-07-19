@@ -21,7 +21,7 @@ export const logRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       return ctx.db.log.findMany({
         where: { sessionId: input.sessionId },
-        include: { ape: true, method: true, researcher: true },
+        include: { ape: { include: { species: true } }, method: true, researcher: true },
         orderBy: { id: "asc" },
       });
     }),
@@ -30,6 +30,7 @@ export const logRouter = createTRPCRouter({
     .input(
       z.object({
         behaviour: z.string().min(1),
+        secondaryBehaviour: z.string().optional(),
         startDatetime: z.string(),
         endDatetime: z.string(),
         notes: z.string().optional(),
@@ -44,6 +45,7 @@ export const logRouter = createTRPCRouter({
       return ctx.db.log.create({
         data: {
           behaviour: input.behaviour,
+          secondaryBehaviour: input.secondaryBehaviour,
           startDatetime: new Date(input.startDatetime),
           endDatetime: new Date(input.endDatetime),
           notes: input.notes,

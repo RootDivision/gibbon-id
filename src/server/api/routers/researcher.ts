@@ -20,4 +20,18 @@ export const researcherRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       return ctx.db.researcher.create({ data: input });
     }),
+
+  updateResearcher: publicProcedure
+    .input(
+      z.object({
+        id: z.number(),
+        firstName: z.string().min(1),
+        lastName: z.string().min(1),
+        email: z.string().email(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { id, ...data } = input;
+      return ctx.db.researcher.update({ where: { id }, data });
+    }),
 });

@@ -52,7 +52,7 @@ function useResolvedCrumbs(pathname: string) {
 
   // Top-level pages
   const rootLabels: Record<string, string> = {
-    research: "Research",
+    research: "My Research Projects",
     ape: "Apes",
     log: "Logs",
     "live-observation": "Live Observation",

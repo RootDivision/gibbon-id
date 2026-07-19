@@ -17,6 +17,7 @@ import {
 } from "~/components/ui/table";
 import { api } from "~/trpc/react";
 import { useAppStore } from "~/app/store";
+import { formatSpeciesName } from "~/lib/utils";
 
 function formatTime(seconds: number): string {
   const h = Math.floor(seconds / 3600);
@@ -47,7 +48,9 @@ export default function LogPage() {
   const [elapsed, setElapsed] = useState(0);
   const [running, setRunning] = useState(false);
   const [behaviour, setBehaviour] = useState("");
+  const [secondaryBehaviour, setSecondaryBehaviour] = useState("");
   const [apeId, setApeId] = useState("");
+  const [groupByApe, setGroupByApe] = useState(false);
   const [sessionIntervalId, setSessionIntervalId] = useState<number | null>(
     null,
   );
@@ -81,6 +84,7 @@ export default function LogPage() {
     setElapsed(0);
     setSessionIntervalId(null);
     setBehaviour("");
+    setSecondaryBehaviour("");
     setApeId("");
     startedAtRef.current = null;
   }
@@ -118,10 +122,26 @@ export default function LogPage() {
   function handleSave(e: React.FormEvent) {
     e.preventDefault();
 
+    if (!apeId) {
+      toast.error("Please select an ape before saving.");
+      return;
+    }
+
+    if (!researcherId) {
+      toast.error("No researcher selected. Please go back and select a researcher.");
+      return;
+    }
+
+    if (!methodId) {
+      toast.error("No method selected. Please go back and select a method.");
+      return;
+    }
+
     const endTime = new Date();
     addLog.mutate(
       {
         behaviour: behaviour,
+        secondaryBehaviour: secondaryBehaviour || undefined,
         startDatetime: startedAtRef.current!.toISOString(),
         endDatetime: endTime.toISOString(),
         apeId: Number(apeId),
@@ -135,6 +155,7 @@ export default function LogPage() {
           toast.success("Log saved.");
           void refetchSessionLogs();
           setBehaviour("");
+          setSecondaryBehaviour("");
           // next log starts where this one ended
           startedAtRef.current = endTime;
         },
@@ -215,7 +236,7 @@ export default function LogPage() {
                         <span className="text-sm font-medium">{ape.name}</span>
                         {ape.species && (
                           <span className="text-muted-foreground text-xs">
-                            {ape.species.name}
+                            {formatSpeciesName(ape.species.name)}
                           </span>
                         )}
                       </div>
@@ -230,12 +251,19 @@ export default function LogPage() {
         <div className="flex gap-4">
           <Input
             id="behaviour"
-            placeholder="Behaviour"
+            placeholder="Primary behaviour *"
             value={behaviour}
             onChange={(e) => setBehaviour(e.target.value)}
             disabled={!running}
           />
-          <Button type="submit" disabled={!running || addLog.isPending}>
+          <Input
+            id="secondaryBehaviour"
+            placeholder="Secondary behaviour (optional)"
+            value={secondaryBehaviour}
+            onChange={(e) => setSecondaryBehaviour(e.target.value)}
+            disabled={!running}
+          />
+          <Button type="submit" disabled={!running || !apeId || !researcherId || !methodId || addLog.isPending}>
             {addLog.isPending ? "Saving…" : "Save log"}
           </Button>
         </div>
@@ -243,48 +271,124 @@ export default function LogPage() {
 
       {sessionLogs && sessionLogs.length > 0 && (
         <div>
-          <h2 className="mb-2 text-lg font-semibold">Session logs</h2>
+          <div className="mb-2 flex items-center justify-between">
+            <h2 className="text-lg font-semibold">Session logs</h2>
+            <div className="flex overflow-hidden rounded-md border">
+              <Button
+                type="button"
+                size="sm"
+                variant={groupByApe ? "ghost" : "secondary"}
+                className="rounded-none"
+                onClick={() => setGroupByApe(false)}
+              >
+                Chronological
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={groupByApe ? "secondary" : "ghost"}
+                className="rounded-none border-l"
+                onClick={() => setGroupByApe(true)}
+              >
+                Group by Ape
+              </Button>
+            </div>
+          </div>
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>ID</TableHead>
-                <TableHead>Behaviour</TableHead>
-                <TableHead>Start</TableHead>
-                <TableHead>End</TableHead>
-                <TableHead>Ape</TableHead>
-                <TableHead>Method</TableHead>
+                <TableHead>Primary Behaviour</TableHead>
+                <TableHead>Secondary Behaviour</TableHead>
+                <TableHead>Start Time</TableHead>
+                <TableHead>End Time</TableHead>
                 <TableHead>Time Difference</TableHead>
+                {!groupByApe && <TableHead>Ape</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sessionLogs.map((log) => {
-                const diffSec = Math.round(
-                  (new Date(log.endDatetime).getTime() -
-                    new Date(log.startDatetime).getTime()) /
-                    1000,
-                );
-                const h = Math.floor(diffSec / 3600);
-                const m = Math.floor((diffSec % 3600) / 60);
-                const s = diffSec % 60;
-                const diffFormatted = [h, m, s]
-                  .map((v) => String(v).padStart(2, "0"))
-                  .join(":");
-                return (
-                  <TableRow key={log.id}>
-                    <TableCell>{log.id}</TableCell>
-                    <TableCell>{log.behaviour}</TableCell>
-                    <TableCell>
-                      {new Date(log.startDatetime).toLocaleTimeString()}
-                    </TableCell>
-                    <TableCell>
-                      {new Date(log.endDatetime).toLocaleTimeString()}
-                    </TableCell>
-                    <TableCell>{log.ape?.name ?? ""}</TableCell>
-                    <TableCell>{log.method?.name ?? ""}</TableCell>
-                    <TableCell>{diffFormatted}</TableCell>
-                  </TableRow>
-                );
-              })}
+              {!groupByApe
+                ? sessionLogs.map((log) => {
+                    const diffSec = Math.round(
+                      (new Date(log.endDatetime).getTime() -
+                        new Date(log.startDatetime).getTime()) /
+                        1000,
+                    );
+                    const diffFormatted = [
+                      Math.floor(diffSec / 3600),
+                      Math.floor((diffSec % 3600) / 60),
+                      diffSec % 60,
+                    ]
+                      .map((v) => String(v).padStart(2, "0"))
+                      .join(":");
+                    return (
+                      <TableRow key={log.id}>
+                        <TableCell>{log.id}</TableCell>
+                        <TableCell>{log.behaviour}</TableCell>
+                        <TableCell>{log.secondaryBehaviour ?? "—"}</TableCell>
+                        <TableCell>
+                          {new Date(log.startDatetime).toLocaleTimeString()}
+                        </TableCell>
+                        <TableCell>
+                          {new Date(log.endDatetime).toLocaleTimeString()}
+                        </TableCell>
+                        <TableCell>{diffFormatted}</TableCell>
+                        <TableCell>{log.ape?.name ?? ""}</TableCell>
+                      </TableRow>
+                    );
+                  })
+                : selectedApes.flatMap((ape) => {
+                    const apeLogs = sessionLogs
+                      .filter((l) => l.apeId === ape.id)
+                      .sort(
+                        (a, b) =>
+                          new Date(a.startDatetime).getTime() -
+                          new Date(b.startDatetime).getTime(),
+                      );
+                    if (apeLogs.length === 0) return [];
+                    return [
+                      <TableRow key={`group-${ape.id}`} className="bg-muted/50">
+                        <TableCell colSpan={6} className="py-2 font-semibold">
+                          {ape.name}
+                          {ape.species ? <> &mdash; {formatSpeciesName(ape.species.name)}</> : ""}
+                        </TableCell>
+                      </TableRow>,
+                      ...apeLogs.map((log) => {
+                        const diffSec = Math.round(
+                          (new Date(log.endDatetime).getTime() -
+                            new Date(log.startDatetime).getTime()) /
+                            1000,
+                        );
+                        const diffFormatted = [
+                          Math.floor(diffSec / 3600),
+                          Math.floor((diffSec % 3600) / 60),
+                          diffSec % 60,
+                        ]
+                          .map((v) => String(v).padStart(2, "0"))
+                          .join(":");
+                        return (
+                          <TableRow key={log.id}>
+                            <TableCell>{log.id}</TableCell>
+                            <TableCell>{log.behaviour}</TableCell>
+                            <TableCell>
+                              {log.secondaryBehaviour ?? "—"}
+                            </TableCell>
+                            <TableCell>
+                              {new Date(
+                                log.startDatetime,
+                              ).toLocaleTimeString()}
+                            </TableCell>
+                            <TableCell>
+                              {new Date(
+                                log.endDatetime,
+                              ).toLocaleTimeString()}
+                            </TableCell>
+                            <TableCell>{diffFormatted}</TableCell>
+                          </TableRow>
+                        );
+                      }),
+                    ];
+                  })}
             </TableBody>
           </Table>
         </div>

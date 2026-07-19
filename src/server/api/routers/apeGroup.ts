@@ -87,4 +87,43 @@ export const apeGroupRouter = createTRPCRouter({
         include: { apes: { include: { species: true } } },
       });
     }),
+
+  updateApeGroup: publicProcedure
+    .input(
+      z.object({
+        id: z.number(),
+        name: z.string().min(1),
+        notes: z.string().optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      return ctx.db.apeGroup.update({
+        where: { id: input.id },
+        data: { name: input.name, notes: input.notes ?? null },
+      });
+    }),
+
+  deleteApeGroup: publicProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      return ctx.db.apeGroup.delete({ where: { id: input.id } });
+    }),
+
+  addApeToGroup: publicProcedure
+    .input(z.object({ apeId: z.number(), groupId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      return ctx.db.ape.update({
+        where: { id: input.apeId },
+        data: { groupId: input.groupId },
+      });
+    }),
+
+  removeApeFromGroup: publicProcedure
+    .input(z.object({ apeId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      return ctx.db.ape.update({
+        where: { id: input.apeId },
+        data: { groupId: null },
+      });
+    }),
 });

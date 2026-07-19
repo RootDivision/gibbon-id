@@ -30,6 +30,7 @@ import {
   SelectValue,
 } from "~/components/ui/select";
 import { api } from "~/trpc/react";
+import { formatSpeciesName } from "~/lib/utils";
 
 type LogSortField = "id" | "startDatetime" | "endDatetime" | "behaviour";
 
@@ -145,12 +146,12 @@ export default function ApeProfilePage() {
             <p className="text-muted-foreground mt-1 text-sm">ID: {ape?.id}</p>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
             <div>
               <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
                 Species
               </p>
-              <p className="mt-1">{ape?.species?.name ?? "—"}</p>
+              <p className="mt-1">{ape?.species?.name ? formatSpeciesName(ape.species.name) : "—"}</p>
             </div>
             <div>
               <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
@@ -169,6 +170,22 @@ export default function ApeProfilePage() {
                 Age Class
               </p>
               <p className="mt-1">{ape?.ageClass ?? "—"}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                Location
+              </p>
+              <p className="mt-1">
+                {ape?.group?.researchProjects?.[0]?.locations?.[0]?.name ?? "—"}
+              </p>
+            </div>
+            <div>
+              <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                Location Type
+              </p>
+              <p className="mt-1">
+                {ape?.group?.researchProjects?.[0]?.locations?.[0]?.type ?? "—"}
+              </p>
             </div>
           </div>
         </>
