@@ -58,6 +58,40 @@ export const logRouter = createTRPCRouter({
       });
     }),
 
+  updateLog: publicProcedure
+    .input(
+      z.object({
+        id: z.number(),
+        behaviour: z.string().min(1),
+        secondaryBehaviour: z.string().optional(),
+        startDatetime: z.string(),
+        endDatetime: z.string(),
+        notes: z.string().optional(),
+        apeId: z.number(),
+        methodId: z.number(),
+        researchProjectId: z.number(),
+        sessionId: z.number(),
+        researcherId: z.number(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      return ctx.db.log.update({
+        where: { id: input.id },
+        data: {
+          behaviour: input.behaviour,
+          secondaryBehaviour: input.secondaryBehaviour,
+          startDatetime: new Date(input.startDatetime),
+          endDatetime: new Date(input.endDatetime),
+          notes: input.notes,
+          apeId: input.apeId,
+          methodId: input.methodId,
+          researchProjectId: input.researchProjectId,
+          sessionId: input.sessionId,
+          researcherId: input.researcherId,
+        },
+      });
+    }),
+
   getLogsByApeId: publicProcedure
     .input(
       z.object({

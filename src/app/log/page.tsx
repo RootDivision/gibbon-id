@@ -10,7 +10,16 @@ import {
   ArrowDown,
   Columns3,
   Search,
+  Pencil,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "~/components/ui/dialog";
+import { toast } from "sonner";
 import { Button } from "~/components/ui/button";
 import { Calendar } from "~/components/ui/calendar";
 import { Checkbox } from "~/components/ui/checkbox";
@@ -38,6 +47,24 @@ import {
 } from "~/components/ui/table";
 import { api } from "~/trpc/react";
 import { formatSpeciesName } from "~/lib/utils";
+
+type EditForm = {
+  behaviour: string;
+  secondaryBehaviour: string;
+  startDatetime: string;
+  endDatetime: string;
+  notes: string;
+  apeId: string;
+  methodId: string;
+  researchProjectId: string;
+  sessionId: string;
+  researcherId: string;
+};
+
+function toDatetimeLocal(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
 
 type ColumnKey =
   | "ape"
@@ -134,6 +161,70 @@ export default function LogPage() {
     dateFrom: undefined,
     dateTo: undefined,
   });
+
+  const [editingLog, setEditingLog] = useState<{ id: number } | null>(null);
+  const [editForm, setEditForm] = useState<EditForm>({
+    behaviour: "",
+    secondaryBehaviour: "",
+    startDatetime: "",
+    endDatetime: "",
+    notes: "",
+    apeId: "",
+    methodId: "",
+    researchProjectId: "",
+    sessionId: "",
+    researcherId: "",
+  });
+
+  const utils = api.useUtils();
+  const updateLog = api.log.updateLog.useMutation({
+    onSuccess: () => {
+      setEditingLog(null);
+      toast.success("Log updated");
+      void utils.log.getLogs.invalidate();
+    },
+    onError: () => {
+      toast.error("Failed to update log");
+    },
+  });
+
+  function openEdit(log: (typeof sortedLogs)[number]) {
+    setEditingLog({ id: log.id });
+    setEditForm({
+      behaviour: log.behaviour,
+      secondaryBehaviour: log.secondaryBehaviour ?? "",
+      startDatetime: toDatetimeLocal(log.startDatetime),
+      endDatetime: toDatetimeLocal(log.endDatetime),
+      notes: log.notes ?? "",
+      apeId: String(log.apeId),
+      methodId: String(log.methodId),
+      researchProjectId: String(log.researchProjectId),
+      sessionId: String(log.sessionId),
+      researcherId: String(log.researcherId),
+    });
+  }
+
+  function handleEditField<K extends keyof EditForm>(key: K, value: EditForm[K]) {
+    setEditForm((prev) => ({ ...prev, [key]: value }));
+  }
+
+  function submitEdit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingLog) return;
+    updateLog.mutate({
+      id: editingLog.id,
+      behaviour: editForm.behaviour,
+      secondaryBehaviour: editForm.secondaryBehaviour || undefined,
+      startDatetime: editForm.startDatetime,
+      endDatetime: editForm.endDatetime,
+      notes: editForm.notes || undefined,
+      apeId: Number(editForm.apeId),
+      methodId: Number(editForm.methodId),
+      researchProjectId: Number(editForm.researchProjectId),
+      sessionId: Number(editForm.sessionId),
+      researcherId: Number(editForm.researcherId),
+    });
+  }
 
   const { data: logs } = api.log.getLogs.useQuery();
   const { data: methods } = api.method.getMethods.useQuery();
@@ -565,6 +656,7 @@ export default function LogPage() {
         <Table className="w-full">
           <TableHeader>
             <TableRow>
+              <TableHead className="w-10" />
               {(
                 [
                   ["ape", "Ape"],
@@ -610,6 +702,17 @@ export default function LogPage() {
           <TableBody>
             {sortedLogs.map((log) => (
               <TableRow key={log.id}>
+                <TableCell className="w-10">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-7"
+                    onClick={() => openEdit(log)}
+                    aria-label="Edit log"
+                  >
+                    <Pencil className="size-3.5" />
+                  </Button>
+                </TableCell>
                 {show("ape") && <TableCell>{log.ape?.name ?? ""}</TableCell>}
                 {show("species") && (
                   <TableCell>{log.ape?.species?.name ? formatSpeciesName(log.ape.species.name) : ""}</TableCell>
@@ -657,6 +760,169 @@ export default function LogPage() {
           </TableBody>
         </Table>
       </div>
+      <Dialog open={!!editingLog} onOpenChange={(open) => { if (!open) setEditingLog(null); }}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Log</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={submitEdit} className="grid gap-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="col-span-2 space-y-1">
+                <Label htmlFor="edit-behaviour">Behaviour</Label>
+                <Input
+                  id="edit-behaviour"
+                  required
+                  value={editForm.behaviour}
+                  onChange={(e) => handleEditField("behaviour", e.target.value)}
+                />
+              </div>
+              <div className="col-span-2 space-y-1">
+                <Label htmlFor="edit-secondary-behaviour">Secondary Behaviour</Label>
+                <Input
+                  id="edit-secondary-behaviour"
+                  value={editForm.secondaryBehaviour}
+                  onChange={(e) => handleEditField("secondaryBehaviour", e.target.value)}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="edit-start">Time Start</Label>
+                <Input
+                  id="edit-start"
+                  type="datetime-local"
+                  required
+                  value={editForm.startDatetime}
+                  onChange={(e) => handleEditField("startDatetime", e.target.value)}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="edit-end">Time Stop</Label>
+                <Input
+                  id="edit-end"
+                  type="datetime-local"
+                  required
+                  value={editForm.endDatetime}
+                  onChange={(e) => handleEditField("endDatetime", e.target.value)}
+                />
+              </div>
+              <div className="col-span-2 space-y-1">
+                <Label htmlFor="edit-notes">Notes</Label>
+                <Input
+                  id="edit-notes"
+                  value={editForm.notes}
+                  onChange={(e) => handleEditField("notes", e.target.value)}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="edit-ape">Ape</Label>
+                <Select
+                  required
+                  value={editForm.apeId}
+                  onValueChange={(v) => handleEditField("apeId", v)}
+                >
+                  <SelectTrigger id="edit-ape" className="w-full" aria-label="Ape">
+                    <SelectValue placeholder="Select ape" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {apes?.map((a) => (
+                      <SelectItem key={a.id} value={String(a.id)}>
+                        {a.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="edit-method">Method</Label>
+                <Select
+                  required
+                  value={editForm.methodId}
+                  onValueChange={(v) => handleEditField("methodId", v)}
+                >
+                  <SelectTrigger id="edit-method" className="w-full" aria-label="Method">
+                    <SelectValue placeholder="Select method" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {methods?.map((m) => (
+                      <SelectItem key={m.id} value={String(m.id)}>
+                        {m.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="edit-researcher">Researcher</Label>
+                <Select
+                  required
+                  value={editForm.researcherId}
+                  onValueChange={(v) => handleEditField("researcherId", v)}
+                >
+                  <SelectTrigger id="edit-researcher" className="w-full" aria-label="Researcher">
+                    <SelectValue placeholder="Select researcher" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {researchers?.map((r) => (
+                      <SelectItem key={r.id} value={String(r.id)}>
+                        {r.firstName} {r.lastName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="edit-session">Session</Label>
+                <Select
+                  required
+                  value={editForm.sessionId}
+                  onValueChange={(v) => handleEditField("sessionId", v)}
+                >
+                  <SelectTrigger id="edit-session" className="w-full" aria-label="Session">
+                    <SelectValue placeholder="Select session" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sessions?.map((s) => (
+                      <SelectItem key={s.id} value={String(s.id)}>
+                        {s.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="col-span-2 space-y-1">
+                <Label htmlFor="edit-project">Research Project</Label>
+                <Select
+                  required
+                  value={editForm.researchProjectId}
+                  onValueChange={(v) => handleEditField("researchProjectId", v)}
+                >
+                  <SelectTrigger id="edit-project" className="w-full" aria-label="Research Project">
+                    <SelectValue placeholder="Select project" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {projects?.map((p) => (
+                      <SelectItem key={p.id} value={String(p.id)}>
+                        {p.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setEditingLog(null)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={updateLog.isPending}>
+                {updateLog.isPending ? "Saving…" : "Save"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
