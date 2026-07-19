@@ -9,6 +9,20 @@ async function main() {
   console.log("🌱 Seeding database…");
 
   // ------------------------------------------------------------------
+  // Clear existing data (order respects FK constraints)
+  // ------------------------------------------------------------------
+  await prisma.log.deleteMany();
+  await prisma.session.deleteMany();
+  await prisma.ape.deleteMany();
+  await prisma.apeGroup.deleteMany();
+  await prisma.researchProject.deleteMany();
+  await prisma.location.deleteMany();
+  await prisma.method.deleteMany();
+  await prisma.researcher.deleteMany();
+  await prisma.species.deleteMany();
+  console.log("  ✔ Cleared existing data");
+
+  // ------------------------------------------------------------------
   // Locations
   // ------------------------------------------------------------------
   const [
@@ -489,7 +503,9 @@ async function main() {
         where: { id: 2 },
         update: {
           apeGroups: { set: [{ id: groupLeuser.id }] },
-          researchers: { set: [{ id: alice.id }, { id: bob.id }, { id: carla.id }] },
+          researchers: {
+            set: [{ id: alice.id }, { id: bob.id }, { id: carla.id }],
+          },
         },
         create: {
           title: "Siamang Social Structure – Sumatra 2026",
