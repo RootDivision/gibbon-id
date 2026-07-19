@@ -164,7 +164,7 @@ export default function ResearchPage() {
       startDate: undefined,
       endDate: undefined,
       locationName: "",
-      locationType: "",
+      locationType: undefined,
     },
   });
 
@@ -176,7 +176,7 @@ export default function ResearchPage() {
       startDate: new Date(research.startDate),
       endDate: research.endDate ? new Date(research.endDate) : undefined,
       locationName: research.locations[0]?.name ?? "",
-      locationType: research.locations[0]?.type ?? "",
+      locationType: (research.locations[0]?.type ?? undefined) as "Captive" | "Wild" | undefined,
     });
     setEditOpen(true);
   }
@@ -208,7 +208,7 @@ export default function ResearchPage() {
       description: "",
       startDate: undefined,
       locationName: "",
-      locationType: "",
+      locationType: undefined,
     },
   });
 
@@ -233,142 +233,133 @@ export default function ResearchPage() {
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent>
-            <DialogHeader>
-              <DialogTitle>New Research Project</DialogTitle>
-              <DialogDescription>
-                Fill in the details below to create a new research project.
-              </DialogDescription>
-            </DialogHeader>
-            <Form {...form}>
-              <form
-                onSubmit={form.handleSubmit(onSubmit)}
-                className="space-y-4"
-              >
-                <FormField
-                  control={form.control}
-                  name="title"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Title</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Research project title"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="startDate"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-col">
-                      <FormLabel>Start Date</FormLabel>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button
-                              variant="outline"
-                              className={cn(
-                                "w-full pl-3 text-left font-normal",
-                                !field.value && "text-muted-foreground",
-                              )}
-                            >
-                              {field.value
-                                ? format(field.value, "PPP")
-                                : "Pick a date"}
-                              <CalendarIcon className="ml-auto size-4 opacity-50" />
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={field.value}
-                            onSelect={field.onChange}
-                            initialFocus
-                          />
-                        </PopoverContent>
-                      </Popover>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Description</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Brief description (optional)"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="locationName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Location</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g. Danum Valley" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="locationType"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Location Type</FormLabel>
-                      <Select
-                        value={field.value}
-                        onValueChange={field.onChange}
-                      >
+          <DialogHeader>
+            <DialogTitle>New Research Project</DialogTitle>
+            <DialogDescription>
+              Fill in the details below to create a new research project.
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="title"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Title</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Research project title" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="startDate"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Start Date</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
                         <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select type…" />
-                          </SelectTrigger>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground",
+                            )}
+                          >
+                            {field.value
+                              ? format(field.value, "PPP")
+                              : "Pick a date"}
+                            <CalendarIcon className="ml-auto size-4 opacity-50" />
+                          </Button>
                         </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Captive">Captive</SelectItem>
-                          <SelectItem value="Wild">Wild</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Brief description (optional)"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="locationName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Location</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g. Danum Valley" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="locationType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Location Type</FormLabel>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select type…" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Captive">Captive</SelectItem>
+                        <SelectItem value="Wild">Wild</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-                <div className="flex justify-end gap-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button type="submit" disabled={addResearch.isPending}>
-                    {addResearch.isPending ? "Creating…" : "Create project"}
-                  </Button>
-                </div>
-              </form>
-            </Form>
-          </DialogContent>
+              <div className="flex justify-end gap-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={addResearch.isPending}>
+                  {addResearch.isPending ? "Creating…" : "Create project"}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </DialogContent>
       </Dialog>
       <p className="text-muted-foreground text-sm">
-        An overview of all your existing research projects. Click the title of
-        a Research Project to show/edit more info about a project, or click
+        An overview of all your existing research projects. Click the title of a
+        Research Project to show/edit more info about a project, or click
         &ldquo;Create New Research Project&rdquo; to add a new project. When
         adding a new project you will be able to add researchers and apes later
         on.
@@ -400,10 +391,7 @@ export default function ResearchPage() {
                   <FormItem>
                     <FormLabel>Title</FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder="Research project title"
-                        {...field}
-                      />
+                      <Input placeholder="Research project title" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -516,10 +504,7 @@ export default function ResearchPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Location Type</FormLabel>
-                    <Select
-                      value={field.value}
-                      onValueChange={field.onChange}
-                    >
+                    <Select value={field.value} onValueChange={field.onChange}>
                       <FormControl>
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="Select type…" />
