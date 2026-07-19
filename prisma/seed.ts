@@ -628,6 +628,7 @@ async function main() {
       update: {},
       create: {
         behaviour: "Singing – great call",
+        secondaryBehaviour: "Foraging – figs",
         startDatetime: new Date("2026-03-01T06:15:00Z"),
         endDatetime: new Date("2026-03-01T06:22:00Z"),
         notes: "Adult male initiated, female joined after ~30 s",
@@ -690,6 +691,7 @@ async function main() {
       update: {},
       create: {
         behaviour: "Brachiating – long-distance travel",
+        secondaryBehaviour: "Alarm call",
         startDatetime: new Date("2026-03-03T06:00:00Z"),
         endDatetime: new Date("2026-03-03T06:40:00Z"),
         notes: "Estimated 400 m traverse, high canopy",
@@ -736,6 +738,7 @@ async function main() {
       update: {},
       create: {
         behaviour: "Singing – morning duet",
+        secondaryBehaviour: "Brachiating – boundary patrol",
         startDatetime: new Date("2026-03-04T05:50:00Z"),
         endDatetime: new Date("2026-03-04T06:10:00Z"),
         notes: "Male–female duet, territory boundary",
@@ -829,6 +832,7 @@ async function main() {
       update: {},
       create: {
         behaviour: "Foraging – leaves",
+        secondaryBehaviour: "Grooming",
         startDatetime: new Date("2026-04-02T07:30:00Z"),
         endDatetime: new Date("2026-04-02T08:10:00Z"),
         notes: "Female and juvenile foraging together on young Ficus leaves",
